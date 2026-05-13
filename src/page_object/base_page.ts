@@ -18,7 +18,6 @@ export abstract class BasePage {
   
   async gotoUrl(url: string) {
     await this.page.goto(`https://practicesoftwaretesting.com/${url}`, { waitUntil: 'domcontentloaded' });
-    await this.page.waitForLoadState('networkidle');
     console.log(await this.page.content());
   }
 
