@@ -5,7 +5,7 @@ pipeline {
         GITHUB_TOKEN = credentials('github-token-actions')
         GITHUB_OWNER = 'SatriaBPY'
         GITHUB_REPO = 'practice_web_testing'
-        RUN_ID = ''
+        GITHUB_API_URL = "https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}"
     }
 
     parameters {
@@ -37,15 +37,37 @@ pipeline {
     }
 
     stages {
-        stage('Trigger GitHub Actions Self-Hosted') {
+        stage('Get Latest Run Number') {
             steps {
                 script {
-                  
-                    def response = sh(script: """
-                        curl -X POST \
-                        -H "Authorization: token ${GITHUB_TOKEN}" \
-                        -H "Accept: application/vnd.github.v3+json" \
-                        https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/actions/workflows/playwright.yml/dispatches \
+                    def beforeRunNumber = sh(
+                        script: """
+                            curl -s -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+                            "${GITHUB_API_URL}/actions/workflows/playwright.yml/runs?per_page=1" \
+                            | jq -r '.workflow_runs[0].run_number // 0'
+                        """,
+                        returnStdout: true
+                    ).trim()
+
+                    env.BEFORE_RUN_NUMBER = beforeRunNumber
+                    echo "Before run number: ${beforeRunNumber}"
+                }
+            }
+        }
+
+        stage('Trigger GitHub Actions') {
+            steps {
+                script {
+                    def triggerId = UUID.randomUUID().toString()
+                    env.TRIGGER_ID = triggerId
+
+                    echo "🚀 Triggering workflow with ID: ${triggerId}"
+
+                    sh """
+                        curl -s -X POST \\
+                        -H "Accept: application/vnd.github+json" \\
+                        -H "Authorization: Bearer ${GITHUB_TOKEN}" \\
+                        "${GITHUB_API_URL}/actions/workflows/playwright.yml/dispatches" \\
                         -d '{
                             "ref": "main",
                             "inputs": {
@@ -56,102 +78,109 @@ pipeline {
                                 "DEBUG": ${params.DEBUG}
                             }
                         }'
-                    """, returnStdout: true)
-                    
-                    echo "Workflow triggered successfully"
-                }
-            }
-        }
-        
-        stage('Wait for GitHub Actions to Complete') {
-            steps {
-                script {
-                    
-                    sleep time: 10, unit: 'SECONDS'
-                    
-                  
-                    def runs = sh(script: """
-                        curl -s -H "Authorization: token ${GITHUB_TOKEN}" \
-                        https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/actions/runs?status=in_progress,queued
-                    """, returnStdout: true)
-                    
-                   
-                    def runId = sh(script: """
-                        echo '$runs' | jq '.workflow_runs[0].id // empty'
-                    """, returnStdout: true).trim()
-                    
-                    if (runId) {
-                        env.RUN_ID = runId
-                        echo "Found workflow run ID: ${RUN_ID}"
-                    } else {
-                        error "Tidak bisa menemukan workflow run ID"
-                    }
-                    
-                   
-                    def status = ""
-                    while (status != "completed") {
-                        sleep time: 30, unit: 'SECONDS'
-                        
-                        def runInfo = sh(script: """
-                            curl -s -H "Authorization: token ${GITHUB_TOKEN}" \
-                            https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/actions/runs/${RUN_ID}
-                        """, returnStdout: true)
-                        
-                        status = sh(script: """
-                            echo '$runInfo' | jq -r '.status // "unknown"'
-                        """, returnStdout: true).trim()
-                        
-                        def conclusion = sh(script: """
-                            echo '$runInfo' | jq -r '.conclusion // "pending"'
-                        """, returnStdout: true).trim()
-                        
-                        echo "Status: ${status}, Conclusion: ${conclusion}"
-                    }
-                }
-            }
-        }
-        
-        stage('Download Allure Report Artifact') {
-            steps {
-                script {
-                    // Download artifact dari GitHub Actions
-                    sh """
-                        curl -L \
-                        -H "Authorization: token ${GITHUB_TOKEN}" \
-                        -H "Accept: application/vnd.github.v3+json" \
-                        https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/actions/runs/${RUN_ID}/artifacts \
-                        -o artifacts.json
                     """
-                    
-                    // Cari artifact ID untuk allure-results
-                    def artifactId = sh(script: """
-                        cat artifacts.json | jq -r '.artifacts[] | select(.name | contains("allure-results")) | .id' | head -1
-                    """, returnStdout: true).trim()
-                    
-                    if (artifactId) {
+                }
+            }
+        }
+
+        stage('Wait & Validate Workflow') {
+            steps {
+                script {
+                    echo "⏳ Waiting for NEW workflow run..."
+
+                    def runId = null
+
+                    for (int i = 0; i < 60; i++) {
+                        runId = sh(
+                            script: """
+                                curl -s -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+                                "${GITHUB_API_URL}/actions/workflows/playwright.yml/runs?event=workflow_dispatch&per_page=5" \
+                                | jq -r '.workflow_runs[]
+                                | select(.run_number > ${env.BEFORE_RUN_NUMBER})
+                                | .id' | head -1
+                            """,
+                            returnStdout: true
+                        ).trim()
+
+                        if (runId) break
+                        echo "⏳ Waiting new run..."
+                        sleep 5
+                    }
+
+                    if (!runId) {
+                        error "❌ Run baru tidak ditemukan"
+                    }
+
+                    env.GITHUB_RUN_ID = runId
+                    echo "✅ Found NEW Run ID: ${runId}"
+
+                    for (int i = 0; i < 90; i++) {
+                        def result = sh(
+                            script: """
+                                curl -s -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+                                "${GITHUB_API_URL}/actions/runs/${runId}" \
+                                | jq -r '.status + "|" + (.conclusion // "pending")'
+                            """,
+                            returnStdout: true
+                        ).trim()
+
+                        def parts = result.tokenize('|')
+                        def status = parts[0]
+                        def conclusion = parts.size() > 1 ? parts[1].trim() : "pending"
+
+                        echo "Status: ${status}, Conclusion: ${conclusion}"
+
+                        if (status == "completed") {
+                            if (conclusion != "success") {
+                                error "❌ Test failed: ${conclusion}"
+                            }
+                            echo "✅ Test passed"
+                            return
+                        }
+                        sleep 5
+                    }
+                    error "❌ Timeout waiting workflow"
+                }
+            }
+        }
+
+        stage('Download All Artifacts') {
+            steps {
+                script {
+                    sh "rm -rf allure-results && mkdir -p allure-results"
+
+                    def urls = sh(
+                        script: """
+                            curl -s -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+                            "${GITHUB_API_URL}/actions/runs/${env.GITHUB_RUN_ID}/artifacts" \
+                            | jq -r '.artifacts[].archive_download_url'
+                        """,
+                        returnStdout: true
+                    ).trim().split("\n")
+
+                    for (u in urls) {
+                        echo "Downloading artifact: ${u}"
                         sh """
-                            curl -L \
-                            -H "Authorization: token ${GITHUB_TOKEN}" \
-                            https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/actions/artifacts/${artifactId}/zip \
-                            -o allure-results.zip
-                            
-                            unzip -o allure-results.zip -d allure-results/
+                            curl -L -H "Authorization: Bearer ${GITHUB_TOKEN}" -o artifact.zip "${u}"
+                            unzip -o artifact.zip -d ./
+                            rm artifact.zip
                         """
-                        echo "Allure results downloaded successfully"
-                    } else {
-                        echo "No allure-results artifact found"
                     }
                 }
             }
         }
-        
+
         stage('Publish Allure Report') {
             steps {
-                allure commandline: 'allure-cli', 
-                       includeProperties: false, 
-                       jdk: '', 
-                       resultPolicy: 'LEAVE_AS_IS',
-                       results: [[path: 'allure-results']]
+                script {
+                    echo "📊 Publishing Allure report..."
+                    allure commandline: 'allure-cli',
+                        includeProperties: false,
+                        jdk: '',
+                        resultPolicy: 'LEAVE_AS_IS',
+                        results: [[path: 'allure-results']]
+                    echo "✅ Allure report published"
+                }
             }
         }
     }
