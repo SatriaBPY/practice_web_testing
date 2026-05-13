@@ -109,19 +109,28 @@ jobs:
           Write-Host "Debug: $env:DEBUG"
           Write-Host "=============================="
           
-          # Build command
-          $cmd = "cross-env ENV=$env:ENV npx playwright test --grep @$env:TEST_TYPE --workers=$env:WORKERS"
+          # Build script name berdasarkan parameter
+          $scriptName = "$($env:ENV):$($env:TEST_TYPE)"
+          
+          # Tambahkan parameter tambahan jika needed
+          $extraParams = ""
           
           if ($env:HEADED -eq "true") {
-            $cmd = "$cmd --headed"
+            $extraParams = "$extraParams --headed"
           }
           
           if ($env:DEBUG -eq "true") {
-            $cmd = "$cmd --debug"
+            $extraParams = "$extraParams --debug"
           }
           
-          Write-Host "Running: $cmd"
-          Invoke-Expression $cmd
+          if ($env:WORKERS -ne "4") {
+            $extraParams = "$extraParams --workers=$($env:WORKERS)"
+          }
+          
+          Write-Host "Running: npm run $scriptName $extraParams"
+          
+          # Jalankan npm script
+          npm run $scriptName -- $extraParams
 
       - name: Upload Playwright Report
         uses: actions/upload-artifact@v4
