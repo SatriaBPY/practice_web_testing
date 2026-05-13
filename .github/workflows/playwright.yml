@@ -11,27 +11,48 @@ on:
     inputs:
       ENV:
         description: 'Environment (QA / STAGING)'
-        required: false
+        required: true
+        type: choice
+        options:
+          - QA
+          - STAGING
         default: 'STAGING'
-
+      
       TEST_TYPE:
-        description: 'Test type (smoke, regression, flaky, etc)'
-        required: false
+        description: 'Test type'
+        required: true
+        type: choice
+        options:
+          - smoke
+          - regression
+          - flaky
+          - serial
+          - test2
+          - e2e
         default: 'smoke'
-
+      
       WORKERS:
         description: 'Number of workers'
         required: false
+        type: string
         default: '4'
+      
+      HEADED:
+        description: 'Run with headed mode'
+        required: false
+        type: boolean
+        default: false
+      
+      DEBUG:
+        description: 'Run with debug mode'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   test:
     timeout-minutes: 60
     runs-on: self-hosted
-
-    env:
-      CI: true
-      ENV: ${{ github.event.inputs.ENV || 'STAGING' }}
 
     steps:
       - name: Checkout repository
@@ -57,36 +78,55 @@ jobs:
 
       - name: Run Playwright tests
         env:
+          # QA Secrets
           QA_ADMIN_EMAIL_PRACTICE: ${{ secrets.QA_ADMIN_EMAIL_PRACTICE }}
           QA_ADMIN_PASSWORD_PRACTICE: ${{ secrets.QA_ADMIN_PASSWORD_PRACTICE }}
-
           QA_VALID_LOGIN: ${{ secrets.QA_VALID_LOGIN }}
           QA_VALID_PASSWORD: ${{ secrets.QA_VALID_PASSWORD }}
-
           QA_DISABLE_EMAIL: ${{ secrets.QA_DISABLE_EMAIL }}
           QA_DISABLE_PASSWORD: ${{ secrets.QA_DISABLE_PASSWORD }}
-
           QA_DEFAULT_USER: ${{ secrets.QA_DEFAULT_USER }}
           QA_DEFAULT_PASSWORD: ${{ secrets.QA_DEFAULT_PASSWORD }}
-
-          ENV: ${{ github.event.inputs.ENV || 'STAGING' }}
-          TEST_TYPE: ${{ github.event.inputs.TEST_TYPE || 'smoke' }}
-          WORKERS: ${{ github.event.inputs.WORKERS || '4' }}
+          
+          # STAGING Secrets (kalau ada)
+          STAGING_VALID_LOGIN: ${{ secrets.STAGING_VALID_LOGIN }}
+          STAGING_VALID_PASSWORD: ${{ secrets.STAGING_VALID_PASSWORD }}
+          
+          # Parameter dari workflow_dispatch
+          ENV: ${{ github.event.inputs.ENV }}
+          TEST_TYPE: ${{ github.event.inputs.TEST_TYPE }}
+          WORKERS: ${{ github.event.inputs.WORKERS }}
+          HEADED: ${{ github.event.inputs.HEADED }}
+          DEBUG: ${{ github.event.inputs.DEBUG }}
 
         run: |
           echo "=============================="
-          echo "ENV=$ENV"
-          echo "TEST_TYPE=$TEST_TYPE"
-          echo "WORKERS=$WORKERS"
+          echo "Environment: $ENV"
+          echo "Test Type: @$TEST_TYPE"
+          echo "Workers: $WORKERS"
+          echo "Headed: $HEADED"
+          echo "Debug: $DEBUG"
           echo "=============================="
-
-          npx playwright test --grep "@$TEST_TYPE" --workers=$WORKERS
+          
+          # Build command
+          CMD="cross-env ENV=$ENV npx playwright test --grep @$TEST_TYPE --workers=$WORKERS"
+          
+          if [ "$HEADED" = "true" ]; then
+            CMD="$CMD --headed"
+          fi
+          
+          if [ "$DEBUG" = "true" ]; then
+            CMD="$CMD --debug"
+          fi
+          
+          echo "Running: $CMD"
+          eval $CMD
 
       - name: Upload Playwright Report
         uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && !contains(github.event.inputs.DEBUG, 'true')
         with:
-          name: playwright-report
+          name: playwright-report-${{ github.event.inputs.ENV }}-${{ github.event.inputs.TEST_TYPE }}
           path: playwright-report/
           retention-days: 30
 
@@ -94,17 +134,6 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: test-results
+          name: test-results-${{ github.event.inputs.ENV }}-${{ github.event.inputs.TEST_TYPE }}
           path: test-results/
-          retention-days: 30
-
-      - name: Upload Debug Files
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: debug-files
-          path: |
-            debug/
-            *.png
-            *.html
           retention-days: 30

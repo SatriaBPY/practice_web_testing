@@ -1,99 +1,64 @@
 pipeline {
     agent any
 
+    environment {
+        GITHUB_TOKEN = credentials('github-token-actions')
+        GITHUB_OWNER = 'SatriaBPY'
+        GITHUB_REPO = 'practice_web_testing'
+        GITHUB_API_URL = "https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}"
+    }
+
     parameters {
         choice(
             name: 'ENV',
             choices: ['QA', 'STAGING'],
-            description: 'Select environment'
+            description: 'Pilih environment'
         )
-
         choice(
             name: 'TEST_TYPE',
-            choices: [
-                'smoke',
-                'regression',
-                'flaky',
-                'flakyDebug',
-                'serial',
-                'test2',
-                'e2e'
-            ],
-            description: 'Select test suite'
+            choices: ['smoke', 'regression', 'flaky', 'serial', 'test2', 'e2e'],
+            description: 'Jenis test'
         )
-
-        booleanParam(
-            name: 'HEADED',
-            defaultValue: false,
-            description: 'Run headed mode (useful for debugging)'
-        )
-
-        booleanParam(
-            name: 'DEBUG',
-            defaultValue: false,
-            description: 'Run with Playwright debug mode'
-        )
-
         string(
             name: 'WORKERS',
             defaultValue: '4',
-            description: 'Number of workers'
+            description: 'Jumlah worker'
+        )
+        booleanParam(
+            name: 'HEADED',
+            defaultValue: false,
+            description: 'Mode headed?'
+        )
+        booleanParam(
+            name: 'DEBUG',
+            defaultValue: false,
+            description: 'Mode debug?'
         )
     }
 
-    environment {
-        ENV = "${params.ENV}"
-    }
-
     stages {
-
-        stage('Checkout') {
-            steps {
-                checkout scm
-            }
-        }
-
-        stage('Install Dependencies') {
-            steps {
-                sh 'npm ci'
-                sh 'npx playwright install --with-deps'
-            }
-        }
-
-        stage('Run Tests') {
+        stage('Trigger GitHub Actions Self-Hosted') {
             steps {
                 script {
-
-                    def cmd = "npx playwright test"
-
                    
-                    cmd += " --grep @${params.TEST_TYPE}"
-
-                  
-                    cmd += " --workers=${params.WORKERS}"
-
-                    
-                    if (params.HEADED) {
-                        cmd += " --headed"
-                    }
-
-                  
-                    if (params.DEBUG) {
-                        cmd = "PWDEBUG=1 " + cmd
-                    }
-
-                    echo "Running command: ${cmd}"
-
-                    sh cmd
+                    sh """
+                        curl -X POST \
+                        -H "Authorization: token ${GITHUB_TOKEN}" \
+                        -H "Accept: application/vnd.github.v3+json" \
+                        https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/actions/workflows/playwright.yml/dispatches \
+                        -d '{
+                            "ref": "main",
+                            "inputs": {
+                                "env": "${params.ENV}",
+                                "test_type": "${params.TEST_TYPE}",
+                                "workers": "${params.WORKERS}",
+                                "headed": "${params.HEADED}",
+                                "debug": "${params.DEBUG}"
+                            }
+                        }'
+                    """
                 }
             }
-        }
-    }
-
-    post {
-        always {
-            archiveArtifacts artifacts: 'playwright-report/**', allowEmptyArchive: true
-            archiveArtifacts artifacts: 'test-results/**', allowEmptyArchive: true
         }
     }
 }
