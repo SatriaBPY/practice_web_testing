@@ -17,8 +17,7 @@ export abstract class BasePage {
   
   
   async gotoUrl(url: string) {
-    await this.page.goto(`https://practicesoftwaretesting.com/${url}`, { waitUntil: 'domcontentloaded' });
-    console.log(await this.page.content());
+    await this.page.goto(`${base_url}${url}`, { waitUntil: 'domcontentloaded' });
   }
 
   async injectSessinStorage(cartId: string) {

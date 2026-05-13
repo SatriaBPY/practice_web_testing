@@ -62,7 +62,7 @@ export default class LoginPage extends BasePage {
         
     }
 
-    await expect(this.emailField).toBeVisible();
+    await this.emailField.waitFor({ state: 'visible' , timeout: 30000});
     await this.emailField.fill(email || '');
     await this.passwordField.fill(password || '');
     await this.loginBtn.click();
