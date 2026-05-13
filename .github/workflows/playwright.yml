@@ -147,3 +147,17 @@ jobs:
           name: test-results-${{ github.event.inputs.ENV }}-${{ github.event.inputs.TEST_TYPE }}
           path: test-results/
           retention-days: 30
+
+      - name: Upload Allure Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-results-${{ github.run_id }}-${{ github.run_attempt }}
+          path: allure-results/
+      
+      - name: Test status
+        run: |
+           if [ -d "allure-results" ] && [ "$(ls -A allure-results)" ]; then
+             echo "✅ Tests completed with results"
+           else
+             echo "⚠️ No test results found"
+           fi
