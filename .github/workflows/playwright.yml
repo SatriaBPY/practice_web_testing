@@ -78,49 +78,51 @@ jobs:
 
       - name: Run Playwright tests
         env:
-          # QA Secrets
-          QA_ADMIN_EMAIL_PRACTICE: ${{ secrets.QA_ADMIN_EMAIL_PRACTICE }}
-          QA_ADMIN_PASSWORD_PRACTICE: ${{ secrets.QA_ADMIN_PASSWORD_PRACTICE }}
-          QA_VALID_LOGIN: ${{ secrets.QA_VALID_LOGIN }}
-          QA_VALID_PASSWORD: ${{ secrets.QA_VALID_PASSWORD }}
-          QA_DISABLE_EMAIL: ${{ secrets.QA_DISABLE_EMAIL }}
-          QA_DISABLE_PASSWORD: ${{ secrets.QA_DISABLE_PASSWORD }}
-          QA_DEFAULT_USER: ${{ secrets.QA_DEFAULT_USER }}
-          QA_DEFAULT_PASSWORD: ${{ secrets.QA_DEFAULT_PASSWORD }}
-          
-          # STAGING Secrets (kalau ada)
-          STAGING_VALID_LOGIN: ${{ secrets.STAGING_VALID_LOGIN }}
-          STAGING_VALID_PASSWORD: ${{ secrets.STAGING_VALID_PASSWORD }}
-          
-          # Parameter dari workflow_dispatch
-          ENV: ${{ github.event.inputs.ENV }}
-          TEST_TYPE: ${{ github.event.inputs.TEST_TYPE }}
-          WORKERS: ${{ github.event.inputs.WORKERS }}
-          HEADED: ${{ github.event.inputs.HEADED }}
-          DEBUG: ${{ github.event.inputs.DEBUG }}
-
+         # QA Secrets
+         QA_ADMIN_EMAIL_PRACTICE: ${{ secrets.QA_ADMIN_EMAIL_PRACTICE }}
+         QA_ADMIN_PASSWORD_PRACTICE: ${{ secrets.QA_ADMIN_PASSWORD_PRACTICE }}
+         QA_VALID_LOGIN: ${{ secrets.QA_VALID_LOGIN }}
+         QA_VALID_PASSWORD: ${{ secrets.QA_VALID_PASSWORD }}
+         QA_DISABLE_EMAIL: ${{ secrets.QA_DISABLE_EMAIL }}
+         QA_DISABLE_PASSWORD: ${{ secrets.QA_DISABLE_PASSWORD }}
+         QA_DEFAULT_USER: ${{ secrets.QA_DEFAULT_USER }}
+         QA_DEFAULT_PASSWORD: ${{ secrets.QA_DEFAULT_PASSWORD }}
+         
+         # STAGING Secrets (kalau ada)
+         STAGING_VALID_LOGIN: ${{ secrets.STAGING_VALID_LOGIN }}
+         STAGING_VALID_PASSWORD: ${{ secrets.STAGING_VALID_PASSWORD }}
+         
+         # Parameter dari workflow_dispatch
+         ENV: ${{ github.event.inputs.ENV }}
+         TEST_TYPE: ${{ github.event.inputs.TEST_TYPE }}
+         WORKERS: ${{ github.event.inputs.WORKERS }}
+         HEADED: ${{ github.event.inputs.HEADED }}
+         DEBUG: ${{ github.event.inputs.DEBUG }}
+     
         run: |
-          echo "=============================="
-          echo "Environment: $ENV"
-          echo "Test Type: @$TEST_TYPE"
-          echo "Workers: $WORKERS"
-          echo "Headed: $HEADED"
-          echo "Debug: $DEBUG"
-          echo "=============================="
+          Write-Host "=============================="
+          Write-Host "Environment: $env:ENV"
+          Write-Host "Test Type: @$env:TEST_TYPE"
+          Write-Host "Workers: $env:WORKERS"
+          Write-Host "Headed: $env:HEADED"
+          Write-Host "Debug: $env:DEBUG"
+          Write-Host "=============================="
           
           # Build command
-          CMD="cross-env ENV=$ENV npx playwright test --grep @$TEST_TYPE --workers=$WORKERS"
+          $cmd = "cross-env ENV=$env:ENV npx playwright test --grep @$env:TEST_TYPE --workers=$env:WORKERS"
           
-          if [ "$HEADED" = "true" ]; then
-            CMD="$CMD --headed"
-          fi
+          if ($env:HEADED -eq "true") {
+             $cmd = "$cmd --headed"
+          }
           
-          if [ "$DEBUG" = "true" ]; then
-            CMD="$CMD --debug"
-          fi
+          if ($env:DEBUG -eq "true") {
+              $cmd = "$cmd --debug"
+          }
           
-          echo "Running: $CMD"
-          eval $CMD
+          Write-Host "Running: $cmd"
+          Invoke-Expression $cmd
+          
+        shell: pwsh
 
       - name: Upload Playwright Report
         uses: actions/upload-artifact@v4
