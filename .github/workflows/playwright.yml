@@ -1,39 +1,84 @@
 name: Playwright Tests
+
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
+
   pull_request:
-    branches: [ main, master ]
-  
+    branches: [main, master]
+
 jobs:
   test:
     timeout-minutes: 60
     runs-on: ubuntu-latest
+
+    env:
+      CI: true
+      ENV: STAGING
+
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
-      with:
-        node-version: lts/*
-    - name: Install dependencies
-      run: npm ci
-    - name: Install Playwright Browsers
-      run: npx playwright install --with-deps
-    - name: Run Playwright tests
-      env:
-        QA_ADMIN_EMAIL_PRACTICE: ${{ secrets.QA_ADMIN_EMAIL_PRACTICE }}
-        QA_ADMIN_PASSWORD_PRACTICE: ${{ secrets.QA_ADMIN_PASSWORD_PRACTICE }}
-        QA_VALID_LOGIN: ${{ secrets.QA_VALID_LOGIN }}
-        QA_VALID_PASSWORD: ${{ secrets.QA_VALID_PASSWORD }}
-        QA_DESABLE_LOGIN: ${{ secrets.QA_DESABLE_LOGIN }}
-        QA_DESABLE_PAS: ${{ secrets.QA_DESABLE_PAS }}
-        QA_DISABLE_EMAIL: ${{ secrets.QA_DISABLE_EMAIL }}
-        QA_DISABLE_PASSWORD: ${{ secrets.QA_DISABLE_PASSWORD }}
-        QA_DEFAULT_USER: ${{ secrets.QA_DEFAULT_USER }}
-        QA_DEFAULT_PASSWORD: ${{ secrets.QA_DEFAULT_PASSWORD }}
-      run: npm run STAGING:e2e
-    - uses: actions/upload-artifact@v4
-      if: ${{ !cancelled() }}
-      with:
-        name: playwright-report
-        path: playwright-report/
-        retention-days: 30
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Browsers
+        run: npx playwright install chromium --with-deps
+
+      - name: Create debug folders
+        run: |
+          mkdir -p playwright-report
+          mkdir -p test-results
+          mkdir -p debug
+
+      - name: Run Playwright tests
+        env:
+          QA_ADMIN_EMAIL_PRACTICE: ${{ secrets.QA_ADMIN_EMAIL_PRACTICE }}
+          QA_ADMIN_PASSWORD_PRACTICE: ${{ secrets.QA_ADMIN_PASSWORD_PRACTICE }}
+
+          QA_VALID_LOGIN: ${{ secrets.QA_VALID_LOGIN }}
+          QA_VALID_PASSWORD: ${{ secrets.QA_VALID_PASSWORD }}
+
+          QA_DISABLE_EMAIL: ${{ secrets.QA_DISABLE_EMAIL }}
+          QA_DISABLE_PASSWORD: ${{ secrets.QA_DISABLE_PASSWORD }}
+
+          QA_DEFAULT_USER: ${{ secrets.QA_DEFAULT_USER }}
+          QA_DEFAULT_PASSWORD: ${{ secrets.QA_DEFAULT_PASSWORD }}
+
+        run: |
+          echo "Running Playwright tests..."
+          npm run STAGING:e2e
+
+      - name: Upload Playwright Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 30
+
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: test-results/
+          retention-days: 30
+
+      - name: Upload Debug Files
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: debug-files
+          path: |
+            debug/
+            *.png
+            *.html
+          retention-days: 30

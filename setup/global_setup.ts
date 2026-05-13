@@ -33,6 +33,15 @@ export async function globalSetup(config: FullConfig) {
   console.log(`Step 3: Authenticating user session...`);
  
   await loginPage.gotoUrl('auth/login');
+  await page.waitForTimeout(5000);
+  
+  console.log('URL =>', page.url());
+  console.log('TITLE =>', await page.title());
+  
+  await page.screenshot({
+    path: 'debug.png',
+    fullPage: true
+  });
   await loginPage.login('valid')
 
   fs.mkdirSync('/auth/state', { recursive: true });
