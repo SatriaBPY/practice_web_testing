@@ -27,8 +27,8 @@ export default class LoginPage extends BasePage {
   readonly googleLogin = this.page.getByRole('button', { name: 'Sign in with Google' });
   readonly loginBtn = this.page.locator('[data-test="login-submit"]');
 
-  readonly adminPage = this.page.locator('[data-test="page-title"]'); //Sales over the years
-  readonly userPage = this.page.locator('div').filter({ hasText: 'My accountHere you can manage' }) //My account
+  readonly adminPage = this.page.locator('[data-test="page-title"]'); 
+  readonly userPage = this.page.locator('div').filter({ hasText: 'My accountHere you can manage' }) 
   //error massage 
   readonly errorEmailFormat = this.page.locator('[data-test="email-error"]');
   readonly errorPasswordLength = this.page.locator('[data-test="password-error"]');
