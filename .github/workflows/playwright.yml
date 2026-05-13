@@ -18,6 +18,17 @@ jobs:
     - name: Install Playwright Browsers
       run: npx playwright install --with-deps
     - name: Run Playwright tests
+      env:
+        QA_ADMIN_EMAIL_PRACTICE: ${{ secrets.QA_ADMIN_EMAIL_PRACTICE }}
+        QA_ADMIN_PASSWORD_PRACTICE: ${{ secrets.QA_ADMIN_PASSWORD_PRACTICE }}
+        QA_VALID_LOGIN: ${{ secrets.QA_VALID_LOGIN }}
+        QA_VALID_PASSWORD: ${{ secrets.QA_VALID_PASSWORD }}
+        QA_DESABLE_LOGIN: ${{ secrets.QA_DESABLE_LOGIN }}
+        QA_DESABLE_PAS: ${{ secrets.QA_DESABLE_PAS }}
+        QA_DISABLE_EMAIL: ${{ secrets.QA_DISABLE_EMAIL }}
+        QA_DISABLE_PASSWORD: ${{ secrets.QA_DISABLE_PASSWORD }}
+        QA_DEFAULT_USER: ${{ secrets.QA_DEFAULT_USER }}
+        QA_DEFAULT_PASSWORD: ${{ secrets.QA_DEFAULT_PASSWORD }}
       run: npm run STAGING:e2e
     - uses: actions/upload-artifact@v4
       if: ${{ !cancelled() }}

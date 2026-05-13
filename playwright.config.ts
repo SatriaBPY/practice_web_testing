@@ -33,7 +33,9 @@ export default defineConfig({
           outputFolder: 'allure-results', 
           detail: true,  
           suiteTitle: false,
-      }]
+      }],
+    ['dot'],
+    ['line']
   ],
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
