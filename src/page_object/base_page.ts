@@ -17,7 +17,9 @@ export abstract class BasePage {
   
   
   async gotoUrl(url: string) {
-    await this.page.goto(`${base_url}${url}`,{waitUntil: 'domcontentloaded'});
+    await this.page.goto(`${base_url}${url}`, { waitUntil: 'domcontentloaded' });
+    await this.page.waitForLoadState('networkidle');
+    console.log(await this.page.content());
   }
 
   async injectSessinStorage(cartId: string) {

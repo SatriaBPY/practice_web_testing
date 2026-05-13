@@ -28,7 +28,7 @@ export async function globalSetup(config: FullConfig) {
   process.env.USER_ID = userId;
   process.env.USER_ID_DISABLED = userIdDeisabled;
 
-  console.log(await page.content());
+  
 
   console.log(`Step 3: Authenticating user session...`);
  
