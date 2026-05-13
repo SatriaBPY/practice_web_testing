@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "commonjs",
+    "lib": ["ESNext", "DOM"],
+    "types": ["node", "@playwright/test"],
+
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+
+    "baseUrl": ".",
+    "paths": {
+      "@pages/*": ["src/page_object/*"],
+      "@utils/*": ["src/utils/*"],
+      "@helper/*": ["src/helper/*"],
+      "@fixtures/*": ["src/fixtures/*"],
+      "@config/*": ["src/config/*"],
+      "@components/*": ["src/components/*"],
+      "@types/*": ["src/types/*"],
+      "@component/*": ["src/component/*"],
+      "@validation/*": ["src/validation/*"],
+      "@services/*": ["src/services/*"]
+    },
+  },
+}

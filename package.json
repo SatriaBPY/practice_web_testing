@@ -1,0 +1,38 @@
+{
+  "name": "portofolio",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "QA:smoke": "cross-env ENV=QA npx playwright test --grep @smoke --workers=4",
+    "QA:regression": "cross-env ENV=QA npx playwright test --grep @regression --workers=4",
+    "QA:flaky": "cross-env ENV=QA npx playwright test --grep @flaky --workers=4 --headed",
+    "QA:flakyDebug": "cross-env ENV=QA npx playwright test --grep @flaky --debug",
+    "QA:serial": "cross-env ENV=QA npx playwright test --grep @serial --workers=4",
+    "QA:test2": "cross-env ENV=QA npx playwright test --grep @test2 --workers=4",
+    "STAGING:smoke": "cross-env ENV=STAGING npx playwright test --grep @smoke --workers=4",
+    "STAGING:regression": "cross-env ENV=STAGING npx playwright test --grep @regression --workers=4",
+    "STAGING:flaky": "cross-env ENV=STAGING npx playwright test --grep @flaky --workers=4 --headed",
+    "STAGING:flakyDebug": "cross-env ENV=STAGING npx playwright test --grep @flaky --debug",
+    "STAGING:serial": "cross-env ENV=STAGING npx playwright test --grep @serial --workers=4",
+    "STAGING:test2": "cross-env ENV=STAGING npx playwright test --grep @test2 --workers=4",
+    "STAGING:e2e": "cross-env ENV=STAGING npx playwright test --grep @e2e --workers=4 --headed",
+    "reporter:clean": "npx allure generate allure-results -o allure-report --clean"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@playwright/test": "^1.59.1",
+    "@types/node": "^25.6.0",
+    "allure-commandline": "^2.40.0",
+    "allure-playwright": "^3.8.0"
+  },
+  "dependencies": {
+    "chalk": "^5.6.2",
+    "cross-env": "^10.1.0",
+    "dotenv": "^17.4.2",
+    "mysql2": "^3.22.3"
+  }
+}
