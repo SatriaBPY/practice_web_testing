@@ -16,7 +16,8 @@ export default defineConfig({
   ],
   /* Run tests in files in parallel */
   expect: {
-    timeout: 3_0000
+    timeout: 30_000,
+    
   },
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
@@ -42,6 +43,7 @@ export default defineConfig({
     headless: true,
 
     actionTimeout: 10 * 1000,
+    
     
     /* Base URL to use in actions like `await page.goto('')`. */
     // baseURL: 'http://localhost:3000',
