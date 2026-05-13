@@ -7,6 +7,23 @@ on:
   pull_request:
     branches: [main, master]
 
+  workflow_dispatch:
+    inputs:
+      ENV:
+        description: 'Environment (QA / STAGING)'
+        required: false
+        default: 'STAGING'
+
+      TEST_TYPE:
+        description: 'Test type (smoke, regression, flaky, etc)'
+        required: false
+        default: 'smoke'
+
+      WORKERS:
+        description: 'Number of workers'
+        required: false
+        default: '4'
+
 jobs:
   test:
     timeout-minutes: 60
@@ -14,7 +31,7 @@ jobs:
 
     env:
       CI: true
-      ENV: STAGING
+      ENV: ${{ github.event.inputs.ENV || 'STAGING' }}
 
     steps:
       - name: Checkout repository
@@ -52,9 +69,18 @@ jobs:
           QA_DEFAULT_USER: ${{ secrets.QA_DEFAULT_USER }}
           QA_DEFAULT_PASSWORD: ${{ secrets.QA_DEFAULT_PASSWORD }}
 
+          ENV: ${{ github.event.inputs.ENV || 'STAGING' }}
+          TEST_TYPE: ${{ github.event.inputs.TEST_TYPE || 'smoke' }}
+          WORKERS: ${{ github.event.inputs.WORKERS || '4' }}
+
         run: |
-          echo "Running Playwright tests..."
-          npm run STAGING:e2e
+          echo "=============================="
+          echo "ENV=$ENV"
+          echo "TEST_TYPE=$TEST_TYPE"
+          echo "WORKERS=$WORKERS"
+          echo "=============================="
+
+          npx playwright test --grep "@$TEST_TYPE" --workers=$WORKERS
 
       - name: Upload Playwright Report
         uses: actions/upload-artifact@v4
