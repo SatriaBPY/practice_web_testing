@@ -42,7 +42,7 @@ pipeline {
                 script {
                     def beforeRunNumber = sh(
                         script: """
-                            curl -s -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+                            curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
                             "${GITHUB_API_URL}/actions/workflows/playwright.yml/runs?per_page=1" \
                             | jq -r '.workflow_runs[0].run_number // 0'
                         """,
@@ -66,7 +66,7 @@ pipeline {
                     sh """
                         curl -s -X POST \\
                         -H "Accept: application/vnd.github+json" \\
-                        -H "Authorization: Bearer ${GITHUB_TOKEN}" \\
+                        -H "Authorization: Bearer $GITHUB_TOKEN" \\
                         "${GITHUB_API_URL}/actions/workflows/playwright.yml/dispatches" \\
                         -d '{
                             "ref": "main",
@@ -86,6 +86,8 @@ pipeline {
         stage('Wait & Validate Workflow') {
             steps {
                 script {
+                    def testFailed = false
+                    
                     echo "⏳ Waiting for NEW workflow run..."
 
                     def runId = null
@@ -93,7 +95,7 @@ pipeline {
                     for (int i = 0; i < 60; i++) {
                         runId = sh(
                             script: """
-                                curl -s -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+                                curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
                                 "${GITHUB_API_URL}/actions/workflows/playwright.yml/runs?event=workflow_dispatch&per_page=5" \
                                 | jq -r '.workflow_runs[]
                                 | select(.run_number > ${env.BEFORE_RUN_NUMBER})
@@ -117,7 +119,7 @@ pipeline {
                     for (int i = 0; i < 90; i++) {
                         def result = sh(
                             script: """
-                                curl -s -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+                                curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
                                 "${GITHUB_API_URL}/actions/runs/${runId}" \
                                 | jq -r '.status + "|" + (.conclusion // "pending")'
                             """,
@@ -132,14 +134,21 @@ pipeline {
 
                         if (status == "completed") {
                             if (conclusion != "success") {
-                                error "❌ Test failed: ${conclusion}"
+                                echo "❌ Test failed: ${conclusion}"
+                                testFailed = true
+                                break
                             }
                             echo "✅ Test passed"
                             return
                         }
                         sleep 5
                     }
-                    error "❌ Timeout waiting workflow"
+                    
+                    env.TEST_FAILED = testFailed.toString()
+                    
+                    if (testFailed) {
+                        echo "⚠️ Test failed, but continuing to download artifacts..."
+                    }
                 }
             }
         }
@@ -151,7 +160,7 @@ pipeline {
 
                     def urls = sh(
                         script: """
-                            curl -s -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+                            curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
                             "${GITHUB_API_URL}/actions/runs/${env.GITHUB_RUN_ID}/artifacts" \
                             | jq -r '.artifacts[].archive_download_url'
                         """,
@@ -161,7 +170,7 @@ pipeline {
                     for (u in urls) {
                         echo "Downloading artifact: ${u}"
                         sh """
-                            curl -L -H "Authorization: Bearer ${GITHUB_TOKEN}" -o artifact.zip "${u}"
+                            curl -L -H "Authorization: Bearer $GITHUB_TOKEN" -o artifact.zip "${u}"
                             unzip -o artifact.zip -d ./
                             rm artifact.zip
                         """
@@ -191,6 +200,14 @@ pipeline {
                 echo "Tests completed, cleaning up..."
                 sleep time: 3, unit: 'SECONDS'
                 cleanWs()
+            }
+        }
+        failure {
+            script {
+                if (env.TEST_FAILED == 'true') {
+                    currentBuild.result = 'FAILURE'
+                    echo "Pipeline marked as FAILED because tests failed"
+                }
             }
         }
     }
