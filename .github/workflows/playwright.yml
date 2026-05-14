@@ -1,11 +1,8 @@
 name: Playwright Tests
 
 on:
-  push:
-    branches: [main, master]
-
   pull_request:
-    branches: [main, master]
+    types: [opened, synchronize, reopened]
 
   workflow_dispatch:
     inputs:
@@ -150,14 +147,16 @@ jobs:
 
       - name: Upload Allure Results
         uses: actions/upload-artifact@v4
+        if: always() 
         with:
           name: allure-results-${{ github.run_id }}-${{ github.run_attempt }}
           path: allure-results/
       
       - name: Test status
+        if: always() 
         run: |
-           if [ -d "allure-results" ] && [ "$(ls -A allure-results)" ]; then
-             echo "✅ Tests completed with results"
-           else
-             echo "⚠️ No test results found"
-           fi
+          if [ -d "allure-results" ] && [ "$(ls -A allure-results)" ]; then
+            echo "✅ Tests completed with results"
+          else
+            echo "⚠️ No test results found"
+          fi

@@ -17,7 +17,8 @@
     "STAGING:serial": "cross-env ENV=STAGING npx playwright test --grep @serial --workers=4",
     "STAGING:test2": "cross-env ENV=STAGING npx playwright test --grep @test2 --workers=4",
     "STAGING:e2e": "cross-env ENV=STAGING npx playwright test --grep @e2e --workers=4",
-    "reporter:clean": "npx allure generate allure-results -o allure-report --clean"
+    "allure:clean": "npx allure generate allure-results -o allure-report --clean",
+    "allure:open": "npx allure open allure-results"
   },
   "keywords": [],
   "author": "",

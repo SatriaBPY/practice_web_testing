@@ -35,8 +35,8 @@ export default defineConfig({
           detail: true,  
           suiteTitle: false,
       }],
-    ['dot'],
-    ['line']
+    // ['dot'],
+    // ['line']
   ],
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
