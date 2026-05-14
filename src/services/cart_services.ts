@@ -205,12 +205,16 @@ export default class CartServices {
         `[DB FALLBACK] Force deleting user from database: ${userId}`,
       );
 
-      await forceDeleteUser(userId);
+      if (process.env.ENV === "QA") {
+        await forceDeleteUser(userId);
+      } else {
+        console.log('ENV:STAGING cannot delete user from databese')
+      }
 
       return;
     }
 
-    throw new Error(`Delete user failed with status ${status}: ${errorBody}`);
+    console.warn(`Delete user failed with status ${status}: ${errorBody}`);
   }
 
   async getTokenUser() {

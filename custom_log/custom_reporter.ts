@@ -95,11 +95,11 @@ class WorkerReporter implements Reporter {
 
     console.log(chalk.gray(`\n--------------------------------------------------`));
     console.log(
-      chalk.bold.white(`Semua test selesai dalam: `) + 
+      chalk.bold.white(`All test finished in: `) + 
       chalk.bold.yellow(`${minutes}m ${seconds}s`)
     );
     console.log(
-      chalk.white(`Status Akhir: `) + 
+      chalk.white(`Final status: `) + 
       statusColor(result.status.toUpperCase())
     );
     console.log(chalk.gray(`--------------------------------------------------\n`));
