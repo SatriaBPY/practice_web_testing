@@ -64,38 +64,34 @@ export default defineConfig({
   // ],
   // 
   projects: [
-      {
-        name: 'Login-Suite',
-        testMatch: /login\.spec\.ts/,
-      },
-      {
-        name: 'Product-Overview',
-        testMatch: /product_overview\.spec\.ts/,
-        dependencies: ['Login-Suite'], 
-      },
-      {
-        name: 'Product-Detail',
-        testMatch: /product_detail\.spec\.ts/,
-        dependencies: ['Product-Overview'],
-      },
-      {
-        name: 'Checkout-Flow',
-        testMatch: [
-          /checkout_review\.spec\.ts/,
-          /checkout_billing_address\.spec\.ts/,
-          /checkout_payment\.spec\.ts/
-        ],
-        dependencies: ['Product-Detail'],
-      },
-      {
-        name: 'E2E-Final-Check',
-        testMatch: /e2e_login\.spec\.ts/,
-        dependencies: ['Checkout-Flow'],
-      },
-  /* Run your local dev server before starting the tests */
-  // webServer: {
-  //   command: 'npm run start',
-  //   url: 'http://localhost:3000',
-  //   reuseExistingServer: !process.env.CI,
-  // },
+    {
+      name: 'Login-Suite',
+      testMatch: /login\.spec\.ts/,
+    },
+    {
+      name: 'Product-Overview',
+      testMatch: /product_overview\.spec\.ts/,
+      dependencies: ['Login-Suite'],
+    },
+    {
+      name: 'Product-Detail',
+      testMatch: /product_detail\.spec\.ts/,
+      dependencies: ['Product-Overview'],
+    },
+    {
+      name: 'Checkout-Flow',
+      testMatch: [
+        /checkout_review\.spec\.ts/,
+        /checkout_billing_address\.spec\.ts/,
+        /checkout_payment\.spec\.ts/
+      ],
+      dependencies: ['Product-Detail'],
+    },
+    {
+      name: 'E2E-Final-Check',
+      testMatch: /e2e_login\.spec\.ts/,
+      dependencies: ['Checkout-Flow'],
+    },
+  ],
 });
+ 
