@@ -57,7 +57,7 @@ export default class LoginPage extends BasePage {
         throw new Error(`Kredensial untuk role "${option}" tidak ditemukan di file .env!`);
       }
   
-      await this.emailField.waitFor({ state: 'visible', timeout: 10000 });
+      await expect(this.emailField).toBeVisible();
       await this.emailField.fill(email);
       await this.passwordField.fill(password || '');
       await this.loginBtn.click();
