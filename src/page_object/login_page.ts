@@ -1,18 +1,7 @@
 import { BasePage } from "./base_page";
 import { Page, expect } from "@playwright/test";
-import { EnvironmentManager } from "@helper/utils";
 import { NavBar } from "@component/navbar";
-
-const {
-  admin_email,
-  admin_password,
-  validLogin,
-  validPassword,
-  default_user,
-  default_password,
-  disableLogin,
-  disablePassword
-} = EnvironmentManager.getCredentials();
+import { EnvironmentManager } from "@helper/utils";
 
 
 export default class LoginPage extends BasePage {
@@ -39,34 +28,40 @@ export default class LoginPage extends BasePage {
   }
   
   async login(option: "admin" | "valid" | "disable" | "default") {
-    let email: string | undefined;
-    let password: string | undefined;
 
-    switch (option) {
-      case "admin":
-        email = admin_email;
-        password = admin_password;
-        break;
-      case "valid":
-        email = validLogin;
-        password = validPassword;
-        break;
-      case "disable":
-        email = disableLogin;
-        password = disablePassword;
-        break;
-      case "default":
-        email = default_user;
-        password = default_password;
-        break;
-        
+      const credentials = EnvironmentManager.getCredentials();
+      
+      let email: string | undefined;
+      let password: string | undefined;
+  
+      switch (option) {
+        case "admin":
+          email = credentials.admin_email;
+          password = credentials.admin_password;
+          break;
+        case "valid":
+          email = credentials.validLogin;
+          password = credentials.validPassword;
+          break;
+        case "disable":
+          email = credentials.disableLogin;
+          password = credentials.disablePassword;
+          break;
+        case "default":
+          email = credentials.default_user;
+          password = credentials.default_password;
+          break;
+      }
+  
+      if (!email) {
+        throw new Error(`Kredensial untuk role "${option}" tidak ditemukan di file .env!`);
+      }
+  
+      await this.emailField.waitFor({ state: 'visible', timeout: 10000 });
+      await this.emailField.fill(email);
+      await this.passwordField.fill(password || '');
+      await this.loginBtn.click();
     }
-
-    await this.emailField.waitFor({ state: 'visible' , timeout: 30000});
-    await this.emailField.fill(email || '');
-    await this.passwordField.fill(password || '');
-    await this.loginBtn.click();
-  }
 
   async fillEmail(email: string) {
     await this.emailField.fill(email)
