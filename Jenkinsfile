@@ -155,59 +155,64 @@ pipeline {
 
         stage('Download All Artifacts') {
             steps {
-               
                 withCredentials([string(credentialsId: 'github-token-actions', variable: 'GITHUB_TOKEN')]) {
-                script {
-                    def apiUrl = "https://api.github.com/repos/SatriaBPY/practice_web_testing"
-                    
-                    sh """
-                        rm -rf allure-results
-                        mkdir -p allure-results
+                    script {
+                        def apiUrl = "https://api.github.com/repos/SatriaBPY/practice_web_testing"
                         
-                        echo "Waiting for GitHub API to index artifacts..."
-                        sleep 10  # Memberi waktu GitHub untuk memperbarui database artifact
-                        
-                        echo "Checking run ID: ${env.GITHUB_RUN_ID}"
-                        
-                        # Tambahkan User-Agent dan pastikan Bearer token terkirim dengan benar
-                        RESPONSE=\$(curl -s -L \
-                            -H "Authorization: Bearer \$GITHUB_TOKEN" \
-                            -H "Accept: application/vnd.github+json" \
-                            -H "X-GitHub-Api-Version: 2022-11-28" \
-                            "${apiUrl}/actions/runs/${env.GITHUB_RUN_ID}/artifacts")
-                        
-                        # Simpan response ke file untuk debugging jika gagal lagi
-                        echo "\$RESPONSE" > github_response.json
-                        
-                        ARTIFACT_ID=\$(echo "\$RESPONSE" | jq -r '.artifacts[] | select(.name | contains("allure")) | .id' | head -1)
-                        
-                        if [ -z "\$ARTIFACT_ID" ] || [ "\$ARTIFACT_ID" == "null" ]; then
-                            echo "--------------------------------------"
-                            echo "DEBUG: Full API Response below:"
-                            cat github_response.json
-                            echo "--------------------------------------"
-                            echo "Error: Artifact ID tidak ditemukan di API."
-                            exit 1
-                        fi
-                        
-                        echo "Found artifact ID: \$ARTIFACT_ID. Downloading..."
-                        
-                        curl -s -L -H "Authorization: Bearer \$GITHUB_TOKEN" \
-                            -o allure.zip \
-                            "${apiUrl}/actions/artifacts/\$ARTIFACT_ID/zip"
-                        
-                        if [ ! -f allure.zip ]; then
-                            echo "Error: Download gagal, file allure.zip tidak ditemukan."
-                            exit 1
-                        fi
-                        
-                        unzip -o allure.zip -d allure-results/
-                        rm -f allure.zip github_response.json
-                        
-                        echo "Success! Extracted files:"
-                        ls allure-results/ | head -n 10
-                    """
-                }
+                        sh """
+                            rm -rf allure-results
+                            mkdir -p allure-results
+                            
+                            echo "Checking Run ID: ${env.GITHUB_RUN_ID}"
+                            
+                            ARTIFACT_ID=""
+                            MAX_RETRIES=15
+                            RETRY_COUNT=0
+                            
+                            # Looping karena file besar (260MB+) butuh waktu indexing di server GitHub
+                            while [ -z "\$ARTIFACT_ID" ] || [ "\$ARTIFACT_ID" == "null" ]; do
+                                if [ \$RETRY_COUNT -eq \$MAX_RETRIES ]; then
+                                    echo "Error: Telah menunggu lama tapi artifact tetap tidak ditemukan."
+                                    exit 1
+                                fi
+                                
+                                echo "Attempting to find artifact (Attempt \$((\$RETRY_COUNT + 1))/\$MAX_RETRIES)..."
+                                
+                                RESPONSE=\$(curl -s -L \
+                                    -H "Authorization: Bearer \$GITHUB_TOKEN" \
+                                    -H "Accept: application/vnd.github+json" \
+                                    -H "X-GitHub-Api-Version: 2022-11-28" \
+                                    "${apiUrl}/actions/runs/${env.GITHUB_RUN_ID}/artifacts")
+                                
+                                ARTIFACT_ID=\$(echo "\$RESPONSE" | jq -r '.artifacts[] | select(.name | contains("allure")) | .id' | head -1)
+                                
+                                if [ -z "\$ARTIFACT_ID" ] || [ "\$ARTIFACT_ID" == "null" ]; then
+                                    echo "Artifact belum siap (kemungkinan sedang proses zipping di GitHub). Menunggu 20 detik..."
+                                    sleep 20
+                                    RETRY_COUNT=\$((\$RETRY_COUNT + 1))
+                                fi
+                            done
+                            
+                            echo "Found artifact ID: \$ARTIFACT_ID. Downloading (~260MB)..."
+                            
+                            # Download menggunakan API zip
+                            curl -L -H "Authorization: Bearer \$GITHUB_TOKEN" \
+                                -o allure.zip \
+                                "${apiUrl}/actions/artifacts/\$ARTIFACT_ID/zip"
+                            
+                            if [ ! -f allure.zip ]; then
+                                echo "Error: File allure.zip tidak ditemukan setelah download."
+                                exit 1
+                            fi
+                            
+                            echo "Extracting files..."
+                            unzip -o allure.zip -d allure-results/
+                            rm -f allure.zip
+                            
+                            echo "Success! Total files in allure-results: \$(ls allure-results/ | wc -l)"
+                            ls allure-results/ | head -n 10
+                        """
+                    }
                 }
             }
         }
