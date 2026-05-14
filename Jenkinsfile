@@ -155,37 +155,48 @@ pipeline {
 
         stage('Download All Artifacts') {
             steps {
-                script {
-                    sh """
-                        rm -rf allure-results
-                        mkdir -p allure-results
+               
+                withCredentials([string(credentialsId: 'github-token-actions', variable: 'GITHUB_TOKEN')]) {
+                    script {
                         
-                        echo "Checking run ID: ${env.GITHUB_RUN_ID}"
+                        def apiUrl = "https://api.github.com/repos/SatriaBPY/practice_web_testing"
                         
-                        # Ambil artifact ID untuk allure-results
-                        ARTIFACT_ID=\$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
-                            "${GITHUB_API_URL}/actions/runs/${env.GITHUB_RUN_ID}/artifacts" \
-                            | jq -r '.artifacts[] | select(.name | contains("allure")) | .id' | head -1)
-                        
-                        if [ -n "\$ARTIFACT_ID" ] && [ "\$ARTIFACT_ID" != "null" ]; then
-                            echo "Found artifact ID: \$ARTIFACT_ID"
+                        sh """
+                            rm -rf allure-results
+                            mkdir -p allure-results
                             
-                            # Download via API (bukan URL langsung)
-                            curl -L -H "Authorization: Bearer $GITHUB_TOKEN" \
-                                -o allure.zip \
-                                "${GITHUB_API_URL}/actions/artifacts/\$ARTIFACT_ID/zip"
+                            echo "Checking run ID: ${env.GITHUB_RUN_ID}"
                             
-                            echo "Extracting to allure-results/..."
-                            unzip -o allure.zip -d allure-results/
+                            # Gunakan single quote untuk menghindari shell escape yang membingungkan
+                            # atau pastikan \$ di-escape dengan benar
                             
-                            rm -f allure.zip
+                            RESPONSE=\$(curl -s -H "Authorization: Bearer \$GITHUB_TOKEN" \
+                                -H "Accept: application/vnd.github+json" \
+                                "${apiUrl}/actions/runs/${env.GITHUB_RUN_ID}/artifacts")
                             
-                            echo "Allure results extracted:"
-                            ls -la allure-results/ | head -20
-                        else
-                            echo "No allure artifact found"
-                        fi
-                    """
+                            # Debug: Lihat apakah API merespon (Opsional)
+                            # echo "API Response: \$RESPONSE" 
+        
+                            ARTIFACT_ID=\$(echo "\$RESPONSE" | jq -r '.artifacts[] | select(.name | contains("allure")) | .id' | head -1)
+                            
+                            if [ -n "\$ARTIFACT_ID" ] && [ "\$ARTIFACT_ID" != "null" ]; then
+                                echo "Found artifact ID: \$ARTIFACT_ID"
+                                
+                                curl -L -H "Authorization: Bearer \$GITHUB_TOKEN" \
+                                    -o allure.zip \
+                                    "${apiUrl}/actions/artifacts/\$ARTIFACT_ID/zip"
+                                
+                                echo "Extracting to allure-results/..."
+                                unzip -o allure.zip -d allure-results/
+                                rm -f allure.zip
+                                
+                                echo "Allure results extracted. Total files: \$(ls allure-results/ | wc -l)"
+                            else
+                                echo "Error: No allure artifact found for Run ID ${env.GITHUB_RUN_ID}"
+                                exit 1
+                            fi
+                        """
+                    }
                 }
             }
         }
