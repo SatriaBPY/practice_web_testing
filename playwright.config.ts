@@ -64,34 +64,39 @@ export default defineConfig({
   // ],
   // 
   projects: [
-    {
-      name: 'Login-Suite',
-      testMatch: /login\.spec\.ts/,
-    },
-    {
-      name: 'Product-Overview',
-      testMatch: /product_overview\.spec\.ts/,
-      dependencies: ['Login-Suite'],
-    },
-    {
-      name: 'Product-Detail',
-      testMatch: /product_detail\.spec\.ts/,
-      dependencies: ['Product-Overview'],
-    },
-    {
-      name: 'Checkout-Flow',
-      testMatch: [
-        /checkout_review\.spec\.ts/,
-        /checkout_billing_address\.spec\.ts/,
-        /checkout_payment\.spec\.ts/
-      ],
-      dependencies: ['Product-Detail'],
-    },
-    {
-      name: 'E2E-Final-Check',
-      testMatch: /e2e_login\.spec\.ts/,
-      dependencies: ['Checkout-Flow'],
-    },
-  ],
+      {
+        name: 'Login-Suite',
+        testMatch: /login\.spec\.ts/,
+        grep: /@smoke|@regression/, 
+      },
+      {
+        name: 'Product-Overview',
+        testMatch: /product_overview\.spec\.ts/,
+        grep: /@smoke|@regression/,
+        dependencies: ['Login-Suite'],
+      },
+      {
+        name: 'Product-Detail',
+        testMatch: /product_detail\.spec\.ts/,
+        grep: /@smoke|@regression/,
+        dependencies: ['Product-Overview'],
+      },
+      {
+        name: 'Checkout-Flow',
+        testMatch: [
+          /checkout_review\.spec\.ts/,
+          /checkout_billing_address\.spec\.ts/,
+          /checkout_payment\.spec\.ts/
+        ],
+        grep: /@smoke|@regression/,
+        dependencies: ['Product-Detail'],
+      },
+      {
+        name: 'E2E-Final-Check',
+        testMatch: /e2e_login\.spec\.ts/,
+        grep: /@smoke|@regression/,
+        dependencies: ['Checkout-Flow'],
+      },
+    ],
 });
  
