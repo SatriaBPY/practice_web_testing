@@ -153,10 +153,16 @@ jobs:
           path: allure-results/
       
       - name: Test status
-        if: always() 
+        if: always()
+        shell: powershell
         run: |
-          if [ -d "allure-results" ] && [ "$(ls -A allure-results)" ]; then
-            echo "✅ Tests completed with results"
-          else
-            echo "⚠️ No test results found"
-          fi
+          if (Test-Path "allure-results") {
+            $files = Get-ChildItem -Path "allure-results" -File
+            if ($files.Count -gt 0) {
+              Write-Host "✅ Tests completed with results"
+            } else {
+              Write-Host "⚠️ No test results found (folder exists but empty)"
+            }
+          } else {
+            Write-Host "⚠️ No test results found (folder missing)"
+          }
