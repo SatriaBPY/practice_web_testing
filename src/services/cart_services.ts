@@ -4,6 +4,7 @@ import { testData_regist, testDataValid_register } from "test-data/test_data";
 import dotnv from "dotenv";
 import { EnvironmentManager } from "@helper/utils";
 import { forceDeleteUser } from "./db_services";
+import { FavoriteItem } from "../types/api.types";
 
 dotnv.config({ quiet: true });
 
@@ -63,22 +64,24 @@ export default class CartServices {
     });
 
     const status = response.status();
-  
+
     if (status === 409) {
-      
-      console.log(`[${new Date().toLocaleTimeString()}] ℹ️ INFO: User already exists (409). Proceeding with existing account.`);
-      return response; 
+      console.log(
+        `[${new Date().toLocaleTimeString()}] ℹ️ INFO: User already exists (409). Proceeding with existing account.`,
+      );
+      return response;
     }
-  
+
     if (status === 201 || status === 200) {
-      console.log(`[${new Date().toLocaleTimeString()}] ✅ SUCCESS: New user registered successfully.`);
+      console.log(
+        `[${new Date().toLocaleTimeString()}] ✅ SUCCESS: New user registered successfully.`,
+      );
       const body = await response.json();
       const iduser = body.id;
-  
+
       return iduser;
     }
-  
-    
+
     const errorBody = await response.text();
     throw new Error(`Failed to register user: ${status} - ${errorBody}`);
   }
@@ -101,30 +104,27 @@ export default class CartServices {
     });
 
     const status = response.status();
-  
+
     if (status === 409) {
-      
-      console.log(`[${new Date().toLocaleTimeString()}] ℹ️ INFO: User already exists (409). Proceeding with existing account.`);
-      return response; 
+      console.log(
+        `[${new Date().toLocaleTimeString()}] ℹ️ INFO: User already exists (409). Proceeding with existing account.`,
+      );
+      return response;
     }
-  
+
     if (status === 201 || status === 200) {
-      console.log(`[${new Date().toLocaleTimeString()}] ✅ SUCCESS: New user registered successfully.`);
+      console.log(
+        `[${new Date().toLocaleTimeString()}] ✅ SUCCESS: New user registered successfully.`,
+      );
       const body = await response.json();
       const iduser = body.id;
-  
+
       return iduser;
     }
-  
-    
+
     const errorBody = await response.text();
     throw new Error(`Failed to register user: ${status} - ${errorBody}`);
-
-    
   }
-
-  
-
 
   async getCartId() {
     const res = await this.request.post(`${API_ENDPOINTS.CART}`, {
@@ -176,7 +176,7 @@ export default class CartServices {
 
   async deleteUser(userId: string) {
     const token = await this.getLoginToken();
-  
+
     const res = await this.request.delete(
       `${API_ENDPOINTS.DELETEUSER}${userId}`,
       {
@@ -187,32 +187,30 @@ export default class CartServices {
         },
       },
     );
-  
+
     if (res.ok()) {
       console.log(`[API] User successfully deleted: ${userId}`);
       return;
     }
-  
+
     const status = res.status();
     const errorBody = await res.text();
-  
+
     console.error(`[API] Delete user failed`);
     console.error(`Status: ${status}`);
     console.error(`Response: ${errorBody}`);
-  
+
     if ([409, 500].includes(status)) {
       console.warn(
         `[DB FALLBACK] Force deleting user from database: ${userId}`,
       );
-  
+
       await forceDeleteUser(userId);
-  
+
       return;
     }
-  
-    throw new Error(
-      `Delete user failed with status ${status}: ${errorBody}`,
-    );
+
+    throw new Error(`Delete user failed with status ${status}: ${errorBody}`);
   }
 
   async getTokenUser() {
@@ -237,13 +235,17 @@ export default class CartServices {
     return token;
   }
 
-  async deleteAllFavorites() {
-    const token = await this.getTokenUser();
+  async deleteAllFavorites(): Promise<void> {
+    const token: string | null | undefined = await this.getTokenUser();
+
+    if (!token) {
+      throw new Error(
+        "Failed to proceed: Bearer token is missing or undefined.",
+      );
+    }
 
     const response = await this.request.get(`${API_ENDPOINTS.FAVORITES}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers: { Authorization: `Bearer ${token}` },
     });
 
     if (!response.ok()) {
@@ -252,32 +254,45 @@ export default class CartServices {
       );
     }
 
-    const favorites = await response.json();
+    const favorites: FavoriteItem[] = await response.json();
 
-    if (favorites.length === 0) {
+    if (!Array.isArray(favorites) || favorites.length === 0) {
       console.log("Info: No favorite products found to delete.");
       return;
     }
 
-    console.log(`Cleaning up ${favorites.length} favorite items...`);
+    console.log(
+      `Cleaning up ${favorites.length} favorite items concurrently...`,
+    );
 
-    for (const item of favorites) {
-      const idToDelete = item.id;
+    const deletePromises = favorites.map(
+      async (item: FavoriteItem): Promise<void> => {
+        const idToDelete = item.id; // Otomatis terdeteksi sebagai string oleh TS
+        try {
+          const deleteRes = await this.request.delete(
+            `${API_ENDPOINTS.FAVORITES}${idToDelete}`,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            },
+          );
 
-      const deleteRes = await this.request.delete(
-        `${API_ENDPOINTS.FAVORITES}${idToDelete}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
+          if (!deleteRes.ok()) {
+            console.error(
+              `Error: Failed to delete favorite ID: ${idToDelete}. Status: ${deleteRes.status()}`,
+            );
+          } else {
+            console.log(`Success: Deleted favorite ID: ${idToDelete}`);
+          }
+        } catch (error) {
+          console.error(
+            `Network Error: Failed to request delete for ID: ${idToDelete}`,
+            error,
+          );
+        }
+      },
+    );
 
-      if (!deleteRes.ok()) {
-        console.error(`Error: Failed to delete favorite ID: ${idToDelete}`);
-      } else {
-        console.log(`Success: Deleted favorite ID: ${idToDelete}`);
-      }
-    }
+    await Promise.all(deletePromises);
+    console.log("Info: All favorite deletion requests have been processed.");
   }
 }

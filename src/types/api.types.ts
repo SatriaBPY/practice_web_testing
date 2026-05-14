@@ -41,3 +41,10 @@ export interface ProductsApiResponse {
   total?: number;
   per_page?: number;
 }
+
+export interface FavoriteItem {
+  id: string;
+  user_id: string;
+  product_id: string;
+  product: Product;
+}

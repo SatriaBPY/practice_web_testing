@@ -696,7 +696,7 @@ test.describe("Product Overview - ", () => {
 
   test(
     "TCPO-043 - Filter by brand: ForgeFlex Tools",
-    { tag: ["@smoke", "@regression", "@flaky"] },
+    { tag: ["@smoke", "@regression"] },
     async ({ home, homePage, page }) => {
       const firstCapture = await homePage.captureApiRespone();
       const firstProduct = firstCapture.data[0]?.name;

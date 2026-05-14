@@ -350,11 +350,13 @@ test.describe("Checkout - Payement ", () => {
       
     },
   );
+
   test.describe.serial("Authenticated Tests", () => {
     test.use({ needsAuth: true });
+  
     test(
       "TCCP-020 - Verify cart is empty after successful payment",
-      { tag: ["@smoke", "@regression"] },
+      { tag: ["@smoke", "@regression", "@flaky"] },
       async ({ addProductTocart, gotoCheckout, cartPage, page }) => {
         // await cartPage.continueToBillingAddressGuest()
         await cartPage.tapProceedToCheckout();
@@ -377,8 +379,6 @@ test.describe("Checkout - Payement ", () => {
         
       },
     );
-
-    
   });
 
   

@@ -48,6 +48,7 @@ export const test = base.extend<MyOptions & MyFixture>({
     const context = await browser.newContext({
       storageState: needsAuth ? storagePath : undefined,
       ignoreHTTPSErrors: true,
+      
     });
     const page = await context.newPage();
     await use(page);

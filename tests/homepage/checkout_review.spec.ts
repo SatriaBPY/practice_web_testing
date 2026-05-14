@@ -344,10 +344,9 @@ test.describe("Checkout Review ", () => {
 
   test.describe.serial("Authenticated Tests", () => {
     test.use({ needsAuth: true });
-  
     test(
       "TCCO-022 - Proceed after login during checkout",
-      { tag: [ "@regression"] },
+      { tag: [ "@regression", "@flaky"] },
       async ({ page, addProductTocart, gotoCheckout, cartPage }) => {
         await expect(cartPage.qttField).toBeVisible();
         await cartPage.tapProceedToCheckout();

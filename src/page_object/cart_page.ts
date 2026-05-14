@@ -267,7 +267,7 @@ export default class CartPage extends BasePage {
   }
 
   async continueBillingAddressSignin() {
-    await this.proceed2Login.waitFor({ state: "visible" });
+    await expect(this.proceed2Login).toBeVisible();
     await this.proceed2Login.click();
   }
 
@@ -328,11 +328,12 @@ export default class CartPage extends BasePage {
   async continueToPayment() {
     await expect(this.countryOption).toBeVisible();
     await this.countrySelect("NL");
-    await this.postalCodeFill(billing_address.postal_code);
     await this.houseNumberFill(billing_address.house_number);
+    await this.postalCodeFill(billing_address.postal_code);
     await this.streetField.fill(billing_address.Street);
     await this.cityField.fill(billing_address.city);
     await this.stateField.fill(billing_address.state);
+    await this.houseNumberFill(billing_address.house_number);
     await this.submitBtnCheckoutClick();
     await expect(this.paymentMethodDropdown).toBeVisible();
   }

@@ -1,4 +1,4 @@
-import { chromium, FullConfig, request } from "@playwright/test";
+import { chromium, expect, FullConfig, request } from "@playwright/test";
 import LoginPage from "@pages/login_page";
 import CartServices from "@services/cart_services";
 import { EnvironmentManager } from "@helper/utils";
@@ -43,6 +43,7 @@ export async function globalSetup(config: FullConfig) {
   //   fullPage: true
   // });
   await loginPage.login('valid')
+  await expect(page).toHaveURL(/\/account/)
 
   fs.mkdirSync('/auth/state', { recursive: true });
   await page.context().storageState({ path: './auth/state/storageState.json' });

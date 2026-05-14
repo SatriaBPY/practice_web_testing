@@ -19,7 +19,7 @@ test.describe("Login ", () => {
 
   test(
     "TCLF-002 - Successfully login with valid credentials as user role",
-    { tag: ["@smoke", "@regression", "@flaky"] },
+    { tag: ["@smoke", "@regression"] },
     async ({loginPage, page }) => {
       await loginPage.openLoginPage();
       await expect(loginPage.emailField).toBeVisible();
@@ -43,7 +43,7 @@ test.describe("Login ", () => {
 
   test(
     "TCLF-004 - Verify URL after successful login as users",
-    { tag: ["@smoke", "@regression", "@flaky"] },
+    { tag: ["@smoke", "@regression"] },
     async ({loginPage, homePage, page }) => {
       await loginPage.openLoginPage();
       await expect(loginPage.emailField).toBeVisible();
