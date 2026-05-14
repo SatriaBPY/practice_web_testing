@@ -129,21 +129,6 @@ jobs:
           # Jalankan npm script
           npm run $scriptName -- $extraParams
 
-      - name: Upload Playwright Report
-        uses: actions/upload-artifact@v4
-        if: always() && !contains(github.event.inputs.DEBUG, 'true')
-        with:
-          name: playwright-report-${{ github.event.inputs.ENV }}-${{ github.event.inputs.TEST_TYPE }}
-          path: playwright-report/
-          retention-days: 30
-
-      - name: Upload Test Results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: test-results-${{ github.event.inputs.ENV }}-${{ github.event.inputs.TEST_TYPE }}
-          path: test-results/
-          retention-days: 30
 
       - name: Upload Allure Results
         uses: actions/upload-artifact@v4

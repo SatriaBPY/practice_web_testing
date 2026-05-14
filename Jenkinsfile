@@ -156,29 +156,39 @@ pipeline {
         stage('Download All Artifacts') {
             steps {
                 script {
-                    sh "rm -rf allure-results && mkdir -p allure-results"
-
-                    def urls = sh(
-                        script: """
-                            curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
-                            "${GITHUB_API_URL}/actions/runs/${env.GITHUB_RUN_ID}/artifacts" \
-                            | jq -r '.artifacts[].archive_download_url'
-                        """,
-                        returnStdout: true
-                    ).trim().split("\n")
-
-                    for (u in urls) {
-                        echo "Downloading artifact: ${u}"
-                        sh """
-                            curl -L -H "Authorization: Bearer $GITHUB_TOKEN" -o artifact.zip "${u}"
-                            unzip -o artifact.zip -d ./
-                            rm artifact.zip
-                        """
-                    }
+                    sh """
+                        rm -rf allure-results
+                        mkdir -p allure-results
+                        
+                        echo "Checking run ID: ${env.GITHUB_RUN_ID}"
+                        
+                        ARTIFACTS_JSON=\$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
+                            "${GITHUB_API_URL}/actions/runs/${env.GITHUB_RUN_ID}/artifacts")
+                        
+                        # Cara aman untuk Windows - loop dan print satu per satu
+                        echo "\$ARTIFACTS_JSON" | jq -r '.artifacts[] | .name + ": " + .archive_download_url'
+                        
+                        ALLURE_URL=\$(echo "\$ARTIFACTS_JSON" | jq -r '.artifacts[] | select(.name | contains("allure")) | .archive_download_url' | head -1)
+                        
+                        if [ -n "\$ALLURE_URL" ] && [ "\$ALLURE_URL" != "null" ]; then
+                            echo "Downloading allure-results from: \$ALLURE_URL"
+                            curl -L -H "Authorization: Bearer $GITHUB_TOKEN" -o allure.zip "\$ALLURE_URL"
+                            
+                            echo "Extracting to allure-results/..."
+                            unzip -o allure.zip -d allure-results/
+                            
+                            rm -f allure.zip
+                            
+                            echo "Allure results extracted:"
+                            ls -la allure-results/
+                        else
+                            echo "No allure artifact found or URL is empty"
+                        fi
+                    """
                 }
             }
         }
-
+        
         stage('Publish Allure Report') {
             steps {
                 script {
