@@ -4,7 +4,7 @@ import path from "path";
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 
 const envFile = process.env.ENV === "STAGING" ? ".env.staging" : ".env";
-dotenv.config({ path: path.resolve(process.cwd(), envFile) });
+dotenv.config({ path: path.resolve(process.cwd(), envFile), override: true })
 
 console.log("=== Environment Variables Loaded ===");
 console.log("ENV:", process.env.ENV);
