@@ -36,7 +36,7 @@ export class EnvironmentManager {
         validPassword: process.env.QA_VALID_PASSWORD,
         default_user: process.env.QA_DEFAULT_USER,
         default_password: process.env.QA_DEFAULT_PASSWORD,
-        disableLogin: process.env.QA_DISABLE_LOGIN,
+        disableLogin: process.env.QA_DISABLE_LOGIN || process.env.QA_DISABLE_EMAIL,
         disablePassword: process.env.QA_DISABLE_PASSWORD,
       },
     };
