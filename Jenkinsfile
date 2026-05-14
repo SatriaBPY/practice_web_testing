@@ -162,17 +162,18 @@ pipeline {
                         
                         echo "Checking run ID: ${env.GITHUB_RUN_ID}"
                         
-                        ARTIFACTS_JSON=\$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
-                            "${GITHUB_API_URL}/actions/runs/${env.GITHUB_RUN_ID}/artifacts")
+                        # Ambil artifact ID untuk allure-results
+                        ARTIFACT_ID=\$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
+                            "${GITHUB_API_URL}/actions/runs/${env.GITHUB_RUN_ID}/artifacts" \
+                            | jq -r '.artifacts[] | select(.name | contains("allure")) | .id' | head -1)
                         
-                        # Cara aman untuk Windows - loop dan print satu per satu
-                        echo "\$ARTIFACTS_JSON" | jq -r '.artifacts[] | .name + ": " + .archive_download_url'
-                        
-                        ALLURE_URL=\$(echo "\$ARTIFACTS_JSON" | jq -r '.artifacts[] | select(.name | contains("allure")) | .archive_download_url' | head -1)
-                        
-                        if [ -n "\$ALLURE_URL" ] && [ "\$ALLURE_URL" != "null" ]; then
-                            echo "Downloading allure-results from: \$ALLURE_URL"
-                            curl -L -H "Authorization: Bearer $GITHUB_TOKEN" -o allure.zip "\$ALLURE_URL"
+                        if [ -n "\$ARTIFACT_ID" ] && [ "\$ARTIFACT_ID" != "null" ]; then
+                            echo "Found artifact ID: \$ARTIFACT_ID"
+                            
+                            # Download via API (bukan URL langsung)
+                            curl -L -H "Authorization: Bearer $GITHUB_TOKEN" \
+                                -o allure.zip \
+                                "${GITHUB_API_URL}/actions/artifacts/\$ARTIFACT_ID/zip"
                             
                             echo "Extracting to allure-results/..."
                             unzip -o allure.zip -d allure-results/
@@ -180,9 +181,9 @@ pipeline {
                             rm -f allure.zip
                             
                             echo "Allure results extracted:"
-                            ls -la allure-results/
+                            ls -la allure-results/ | head -20
                         else
-                            echo "No allure artifact found or URL is empty"
+                            echo "No allure artifact found"
                         fi
                     """
                 }
