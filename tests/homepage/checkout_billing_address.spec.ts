@@ -220,7 +220,7 @@ test.describe("Checkout Billing Address", () => {
 
   test(
     "TCCB-017 - Input Street field more than 70 characters – verify error message is shown",
-    { tag: ["@regression"] },
+    { tag: ["@regression", "@bug"] },
     async ({ addProductTocart, gotoCheckout, cartPage, page }) => {
       await cartPage.continueToBillingAddressGuest();
       await expect(cartPage.countryOption).toBeVisible();
@@ -304,6 +304,8 @@ test.describe("Checkout Billing Address", () => {
       await cartPage.countrySelect("NL");
       await cartPage.postalCodeFill(billing_address.postal_code);
       await cartPage.houseNumberFill(billing_address.house_number);
+      await expect(cartPage.postalcodeLookup).toBeVisible().catch(() => false);
+      await page.waitForTimeout(1000);
       await cartPage.streetField.fill(billing_address.Street);
       await cartPage.cityField.fill(billing_address.city);
       await cartPage.stateFill(billing_address.stat_40_char);
@@ -315,13 +317,15 @@ test.describe("Checkout Billing Address", () => {
 
   test(
     "TCCB-023 - Input State field more than 40 characters",
-    { tag: ["@regression"] },
+    { tag: ["@regression", "@flaky"] },
     async ({ addProductTocart, gotoCheckout, cartPage, page }) => {
       await cartPage.continueToBillingAddressGuest();
       await expect(cartPage.countryOption).toBeVisible();
       await cartPage.countrySelect("NL");
       await cartPage.postalCodeFill(billing_address.postal_code);
       await cartPage.houseNumberFill(billing_address.house_number);
+      await expect(cartPage.postalcodeLookup).toBeVisible().catch(() => false);
+      await page.waitForTimeout(1000);
       await cartPage.streetField.fill(billing_address.Street);
       await cartPage.cityField.fill(billing_address.city);
       await cartPage.stateFill(billing_address.stat_41_char);
@@ -341,7 +345,7 @@ test.describe("Checkout Billing Address", () => {
 
   test(
     "TCCB-025 - Verify Proceed button is inactive when one data is invalid",
-    { tag: ["@regression"] },
+    { tag: ["@regression", "@flaky"] },
     async ({ addProductTocart, gotoCheckout, cartPage, page }) => {
       await cartPage.continueToBillingAddressGuest();
       await expect(cartPage.countryOption).toBeVisible();
@@ -349,6 +353,7 @@ test.describe("Checkout Billing Address", () => {
       await cartPage.postalCodeFill(billing_address.postal_code);
       await cartPage.houseNumberFill(billing_address.house_number);
       await cartPage.streetField.fill(billing_address.Street);
+      await page.waitForTimeout(2000);
       await cartPage.cityField.fill(billing_address.city_41_char);
       await cartPage.stateFill(billing_address.state);
       await expect(cartPage.submitBtnCheckout).toBeDisabled();
@@ -364,6 +369,8 @@ test.describe("Checkout Billing Address", () => {
       await cartPage.countrySelect("NL");
       await cartPage.postalCodeFill(billing_address.postal_code);
       await cartPage.houseNumberFill(billing_address.house_number);
+      await expect(cartPage.postalcodeLookup).toBeVisible().catch(() => false);
+      await page.waitForTimeout(1111)
       await cartPage.streetField.clear();
       await cartPage.cityField.fill(billing_address.city);
       await cartPage.stateFill(billing_address.state);

@@ -24,7 +24,7 @@ export default defineConfig({
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
   /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : undefined,
+  workers: process.env.CI ? 1 : 4,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [
     ["html", { outputFolder: "playwright-report" }],
@@ -38,7 +38,8 @@ export default defineConfig({
       },
     ],
     // ['dot'],
-    // ['line']
+    // ['line'],
+    ['github'],
   ],
  
   use: {
@@ -50,15 +51,18 @@ export default defineConfig({
 
     actionTimeout: 10 * 1000,
 
-    trace: "on-first-retry",
+    trace: 'retain-on-failure',
+    screenshot:'only-on-failure',
   },
 
   /* Configure projects for major browsers */
   projects: [
     {
-      name: "Automation Testing Chrome",
+      name: "Automation Testing",
       use: {
         ...devices["Desktop Chrome"],
+        browserName: "chromium",
+        
       },
     },
   ],

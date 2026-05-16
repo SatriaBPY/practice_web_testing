@@ -75,6 +75,8 @@ export default class ProductDetailPage extends BasePage {
 
   async addToFavAction() {
     await this.addtofavBtn.waitFor({ state: "visible" });
+    await this.addtofavBtn.scrollIntoViewIfNeeded();
+    await this.page.waitForTimeout(400);
     await this.addtofavBtn.click();
   }
 

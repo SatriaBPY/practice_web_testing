@@ -356,7 +356,7 @@ test.describe("Checkout - Payement ", () => {
   
     test(
       "TCCP-020 - Verify cart is empty after successful payment",
-      { tag: ["@smoke", "@regression", "@flaky"] },
+      { tag: ["@smoke", "@regression"] },
       async ({ addProductTocart, gotoCheckout, cartPage, page }) => {
         // await cartPage.continueToBillingAddressGuest()
         await cartPage.tapProceedToCheckout();

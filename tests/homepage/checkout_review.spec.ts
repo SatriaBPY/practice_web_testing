@@ -348,6 +348,8 @@ test.describe("Checkout Review ", () => {
       "TCCO-022 - Proceed after login during checkout",
       { tag: [ "@regression", "@flaky"] },
       async ({ page, addProductTocart, gotoCheckout, cartPage }) => {
+        await page.context().storageState({ path: `auth/state/storageState.json` });
+        await page.reload();
         await expect(cartPage.qttField).toBeVisible();
         await cartPage.tapProceedToCheckout();
         await cartPage.welcomeMessage('sign-in')

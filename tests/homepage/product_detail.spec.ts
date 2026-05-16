@@ -1,9 +1,72 @@
 import { test, expect } from "src/fixture/fixture";
 
+test.describe("Product Detail-Authenticated Tests", () => {
+  test.describe.configure({ mode: "serial" });
+  test.use({ needsAuth: true });
+
+  test(
+    "TCPD-028 - Add product to favorites",
+    { tag: ["@smoke", "@regression", "@flaky"] },
+    async ({ page, productDetail, productDetailPage }) => {
+      await page.context().storageState({ path: `auth/state/storageState.json` });
+      await page.reload();
+      await expect(productDetailPage.addtofavBtn).toBeVisible();
+      await expect(productDetailPage.priceProduct).toBeVisible();
+      await expect(productDetailPage.addtofavBtn).toBeEnabled();
+      await productDetailPage.addToFavAction();
+      await expect(async () => {
+        await expect(productDetailPage.successAddfav).toBeVisible({
+          timeout: 2000,
+        });
+      }).toPass({ timeout: 10000 });
+    },
+  );
+
+
+  test(
+    "TCPD-029 - Add duplicate product to favorites",
+    { tag: ["@regression", "@flaky"] },
+    async ({ productDetail, productDetailPage, page }) => {
+      await expect(productDetailPage.addtofavBtn).toBeVisible();
+      await productDetailPage.addToFavAction();
+      await expect(productDetailPage.duplicateAddfav).toBeVisible();
+    },
+  );
+}); 
+
+
+test.describe("Product Detail-Authenticated Tests", () => {
+  test.describe.configure({ mode: "serial" });
+  test.use({ needsAuth: true });
+
+  test(
+    "TCPD-030 - Add Out of Stock product to favorites",
+    { tag: ["@regression", "@flaky"] },
+    async ({ outOfstock, productDetailPage, page }) => {
+      await expect(productDetailPage.addtofavBtn).toBeVisible();
+      await productDetailPage.addToFavAction();
+      await expect(productDetailPage.successAddfav).toBeVisible();
+    },
+  );
+
+  test(
+    "TCPD-033 - Verify Success toast add to favorites auto-dismisses",
+    { tag: ["@regression", "@flaky"] },
+    async ({ outOfstock, productDetailPage, page }) => {
+      await expect(productDetailPage.addtofavBtn).toBeVisible();
+      await productDetailPage.addToFavAction();
+      await expect(productDetailPage.duplicateAddfav).toBeVisible();
+      await expect(productDetailPage.duplicateAddfav).toBeHidden({
+        timeout: 10000,
+      });
+    },
+  );
+}); 
+
 test.describe("Product Detail ", () => {
   test(
     "TCPD-001 - Product information showns",
-    { tag: ["@smoke","@regression"] },
+    { tag: ["@smoke", "@regression"] },
     async ({ productDetail, productDetailPage, page }) => {
       await expect(productDetailPage.titleProduct).toBeVisible();
       await expect(productDetailPage.description).toBeVisible();
@@ -23,13 +86,12 @@ test.describe("Product Detail ", () => {
       await expect(productDetailPage.qttField).toBeDisabled();
       await expect(productDetailPage.minusQttBtn).toBeDisabled();
       await expect(productDetailPage.maxQttBtn).toBeDisabled();
-     
     },
   );
 
   test(
     "TCPD-003 - Verify quantity components",
-    { tag: ["@smoke","@regression"] },
+    { tag: ["@smoke", "@regression"] },
     async ({ productDetail, productDetailPage, page }) => {
       await expect(productDetailPage.qttField).toBeVisible();
       await expect(productDetailPage.minusQttBtn).toBeVisible();
@@ -39,10 +101,10 @@ test.describe("Product Detail ", () => {
 
   test(
     "TCPD-004 - Verify default quantity value",
-    { tag: ["@smoke","@regression"] },
+    { tag: ["@smoke", "@regression"] },
     async ({ productDetail, productDetailPage, page }) => {
       await expect(productDetailPage.qttField).toBeVisible();
-      await expect(productDetailPage.qttField).toHaveValue('1');
+      await expect(productDetailPage.qttField).toHaveValue("1");
     },
   );
 
@@ -66,11 +128,11 @@ test.describe("Product Detail ", () => {
 
   test(
     "TCPD-007 - Increase quantity by 1 using plus (+)",
-    { tag: ["@smoke","@regression"] },
+    { tag: ["@smoke", "@regression"] },
     async ({ productDetail, productDetailPage, page }) => {
       await expect(productDetailPage.minusQttBtn).toBeVisible();
       await productDetailPage.maxQttAction(1);
-      await expect(productDetailPage.qttField).toHaveValue('2');
+      await expect(productDetailPage.qttField).toHaveValue("2");
     },
   );
 
@@ -80,7 +142,7 @@ test.describe("Product Detail ", () => {
     async ({ productDetail, productDetailPage, page }) => {
       await expect(productDetailPage.minusQttBtn).toBeVisible();
       await productDetailPage.maxQttAction(5);
-      await expect(productDetailPage.qttField).toHaveValue('6');
+      await expect(productDetailPage.qttField).toHaveValue("6");
     },
   );
 
@@ -89,21 +151,21 @@ test.describe("Product Detail ", () => {
     { tag: ["@regression"] },
     async ({ outOfstock, productDetailPage, page }) => {
       await expect(productDetailPage.minusQttBtn).toBeVisible();
-       await expect(productDetailPage.minusQttBtn).toBeDisabled();
+      await expect(productDetailPage.minusQttBtn).toBeDisabled();
       await productDetailPage.maxQttAction(1).catch(() => false);
-      await expect(productDetailPage.qttField).toHaveValue('1');
+      await expect(productDetailPage.qttField).toHaveValue("1");
     },
   );
 
   test(
     "TCPD-010 - Decrease quantity by 1 using minus (-)",
-    { tag: ["@smoke","@regression"] },
+    { tag: ["@smoke", "@regression"] },
     async ({ productDetail, productDetailPage, page }) => {
       await expect(productDetailPage.minusQttBtn).toBeVisible();
       await productDetailPage.maxQttAction(2);
-      await expect(productDetailPage.qttField).toHaveValue('3');
+      await expect(productDetailPage.qttField).toHaveValue("3");
       await productDetailPage.minQttAction(1);
-      await expect(productDetailPage.qttField).toHaveValue('2');
+      await expect(productDetailPage.qttField).toHaveValue("2");
     },
   );
 
@@ -113,9 +175,9 @@ test.describe("Product Detail ", () => {
     async ({ productDetail, productDetailPage, page }) => {
       await expect(productDetailPage.minusQttBtn).toBeVisible();
       await productDetailPage.maxQttAction(4);
-      await expect(productDetailPage.qttField).toHaveValue('5');
+      await expect(productDetailPage.qttField).toHaveValue("5");
       await productDetailPage.minQttAction(3);
-      await expect(productDetailPage.qttField).toHaveValue('2');
+      await expect(productDetailPage.qttField).toHaveValue("2");
     },
   );
 
@@ -124,9 +186,9 @@ test.describe("Product Detail ", () => {
     { tag: ["@regression"] },
     async ({ productDetail, productDetailPage, page }) => {
       await expect(productDetailPage.minusQttBtn).toBeVisible();
-      await expect(productDetailPage.qttField).toHaveValue('1');
+      await expect(productDetailPage.qttField).toHaveValue("1");
       await productDetailPage.minQttAction(1);
-      await expect(productDetailPage.qttField).toHaveValue('1');
+      await expect(productDetailPage.qttField).toHaveValue("1");
     },
   );
 
@@ -135,10 +197,10 @@ test.describe("Product Detail ", () => {
     { tag: ["@regression"] },
     async ({ productDetail, productDetailPage, page }) => {
       await expect(productDetailPage.minusQttBtn).toBeVisible();
-      await productDetailPage.inputQtt('2')
-      await expect(productDetailPage.qttField).toHaveValue('2');
+      await productDetailPage.inputQtt("2");
+      await expect(productDetailPage.qttField).toHaveValue("2");
       await productDetailPage.minQttAction(2);
-      await expect(productDetailPage.qttField).toHaveValue('1');
+      await expect(productDetailPage.qttField).toHaveValue("1");
     },
   );
 
@@ -147,8 +209,8 @@ test.describe("Product Detail ", () => {
     { tag: ["@regression"] },
     async ({ productDetail, productDetailPage, page }) => {
       await expect(productDetailPage.minusQttBtn).toBeVisible();
-      await productDetailPage.inputQtt('4')
-      await expect(productDetailPage.qttField).toHaveValue('4');
+      await productDetailPage.inputQtt("4");
+      await expect(productDetailPage.qttField).toHaveValue("4");
     },
   );
 
@@ -157,8 +219,8 @@ test.describe("Product Detail ", () => {
     { tag: ["@regression"] },
     async ({ productDetail, productDetailPage, page }) => {
       await expect(productDetailPage.minusQttBtn).toBeVisible();
-      await productDetailPage.inputQtt('999999999')
-      await expect(productDetailPage.qttField).toHaveValue('999999999');
+      await productDetailPage.inputQtt("999999999");
+      await expect(productDetailPage.qttField).toHaveValue("999999999");
     },
   );
 
@@ -167,8 +229,8 @@ test.describe("Product Detail ", () => {
     { tag: ["@regression"] },
     async ({ productDetail, productDetailPage, page }) => {
       await expect(productDetailPage.minusQttBtn).toBeVisible();
-      await productDetailPage.inputQtt('9999999999')
-      await expect(productDetailPage.qttField).toHaveValue('999999999');
+      await productDetailPage.inputQtt("9999999999");
+      await expect(productDetailPage.qttField).toHaveValue("999999999");
     },
   );
 
@@ -177,10 +239,10 @@ test.describe("Product Detail ", () => {
     { tag: ["@regression"] },
     async ({ productDetail, productDetailPage, page }) => {
       await expect(productDetailPage.minusQttBtn).toBeVisible();
-      await productDetailPage.inputQtt('5')
-      await expect(productDetailPage.qttField).toHaveValue('5')
-      await productDetailPage.inputQtt('2');
-      await expect(productDetailPage.qttField).toHaveValue('2');
+      await productDetailPage.inputQtt("5");
+      await expect(productDetailPage.qttField).toHaveValue("5");
+      await productDetailPage.inputQtt("2");
+      await expect(productDetailPage.qttField).toHaveValue("2");
     },
   );
 
@@ -189,8 +251,8 @@ test.describe("Product Detail ", () => {
     { tag: ["@regression"] },
     async ({ productDetail, productDetailPage, page }) => {
       await expect(productDetailPage.minusQttBtn).toBeVisible();
-      await productDetailPage.inputQtt('0');
-      await expect(productDetailPage.qttField).toHaveValue('1');
+      await productDetailPage.inputQtt("0");
+      await expect(productDetailPage.qttField).toHaveValue("1");
     },
   );
 
@@ -199,16 +261,16 @@ test.describe("Product Detail ", () => {
     { tag: ["@regression"] },
     async ({ productDetail, productDetailPage, page }) => {
       await expect(productDetailPage.minusQttBtn).toBeVisible();
-      await productDetailPage.inputQtt('AAA#$@##$').catch(()=>false);
-      console.log('System prevents non-numeric input.');
-      await expect(productDetailPage.qttField).toHaveValue('1');
+      await productDetailPage.inputQtt("AAA#$@##$").catch(() => false);
+      console.log("System prevents non-numeric input.");
+      await expect(productDetailPage.qttField).toHaveValue("1");
     },
   );
 
   test(
     "TCPD-020 - Add different products to cart",
     { tag: ["@smoke", "@regression"] },
-    async ({ addProductTocart,productDetail, productDetailPage, page }) => {
+    async ({ addProductTocart, productDetail, productDetailPage, page }) => {
       await expect(productDetailPage.addtocartBtn).toBeVisible();
       await productDetailPage.addToCartAction();
       await expect(productDetailPage.successAddtocart).toBeVisible();
@@ -218,7 +280,7 @@ test.describe("Product Detail ", () => {
 
   test(
     "TCPD-021 - Verify cart icon and total item badge",
-    { tag: ["@smoke","@regression"] },
+    { tag: ["@smoke", "@regression"] },
     async ({ productDetail, productDetailPage, page }) => {
       await expect(productDetailPage.addtocartBtn).toBeVisible();
       await productDetailPage.addToCartAction();
@@ -243,7 +305,7 @@ test.describe("Product Detail ", () => {
     { tag: ["@regression"] },
     async ({ productDetail, productDetailPage, page }) => {
       await expect(productDetailPage.addtocartBtn).toBeVisible();
-      await productDetailPage.inputQtt('99999999')
+      await productDetailPage.inputQtt("99999999");
       await productDetailPage.addToCartAction();
       await expect(productDetailPage.successAddtocart).toBeVisible();
       await productDetailPage.cartVerification();
@@ -255,7 +317,7 @@ test.describe("Product Detail ", () => {
     { tag: ["@regression"] },
     async ({ productDetail, productDetailPage, page }) => {
       await expect(productDetailPage.addtocartBtn).toBeVisible();
-      await productDetailPage.inputQtt('15')
+      await productDetailPage.inputQtt("15");
       await productDetailPage.addToCartAction();
       await expect(productDetailPage.successAddtocart).toBeVisible();
       await productDetailPage.cartVerification();
@@ -269,7 +331,7 @@ test.describe("Product Detail ", () => {
       await expect(productDetailPage.addtocartBtn).toBeVisible();
       await productDetailPage.addToCartAction();
       await expect(productDetailPage.successAddtocart).toBeVisible();
-      await page.reload();      
+      await page.reload();
       await productDetailPage.cartVerification();
     },
   );
@@ -279,7 +341,7 @@ test.describe("Product Detail ", () => {
     { tag: ["@regression"] },
     async ({ outOfstock, productDetailPage, page }) => {
       await expect(productDetailPage.addtocartBtn).toBeVisible();
-      await productDetailPage.addToCartAction().catch(()=> false);
+      await productDetailPage.addToCartAction().catch(() => false);
       await expect(productDetailPage.addtocartBtn).toBeDisabled();
     },
   );
@@ -291,97 +353,56 @@ test.describe("Product Detail ", () => {
       await expect(productDetailPage.addtocartBtn).toBeVisible();
       await productDetailPage.addToCartAction();
       await expect(productDetailPage.successAddtocart).toBeVisible();
-      await expect(productDetailPage.successAddtocart).toBeHidden({timeout: 10000});
+      await expect(productDetailPage.successAddtocart).toBeHidden({
+        timeout: 10000,
+      });
       await productDetailPage.cartVerification();
       await productDetailPage.cartVerification();
     },
   );
 
-  test.describe.serial("Authenticated Tests", () => {
-    test.use({ needsAuth: true });
   
-    test(
-      "TCPD-028 - Add product to favorites",
-      { tag: ["@smoke", "@regression"] },
-      async ({ productDetail, productDetailPage, page }) => {
-        await expect(productDetailPage.addtofavBtn).toBeVisible();
-        await productDetailPage.addToFavAction();
-        await expect(productDetailPage.successAddfav).toBeVisible();
-      }
-    );
-
-    test(
-      "TCPD-029 - Add duplicate product to favorites",
-      { tag: ["@regression"] },
-      async ({ productDetail, productDetailPage, page }) => {
-        await expect(productDetailPage.addtofavBtn).toBeVisible();
-        await productDetailPage.addToFavAction();
-        await expect(productDetailPage.duplicateAddfav).toBeVisible();
-      }
-    );
-
-    test(
-      "TCPD-030 - Add Out of Stock product to favorites",
-      { tag: ["@regression"] },
-      async ({ outOfstock, productDetailPage, page }) => {
-        await expect(productDetailPage.addtofavBtn).toBeVisible();
-        await productDetailPage.addToFavAction();
-        await expect(productDetailPage.successAddfav).toBeVisible();
-      }
-    );
-
-    test(
-      "TCPD-033 - Verify Success toast add to favorites auto-dismisses",
-      { tag: ["@regression"] },
-      async ({ outOfstock, productDetailPage, page }) => {
-        await expect(productDetailPage.addtofavBtn).toBeVisible();
-        await productDetailPage.addToFavAction();
-        await expect(productDetailPage.duplicateAddfav).toBeVisible();
-        await expect(productDetailPage.duplicateAddfav).toBeHidden({timeout: 10000});
-      }
-    );
   
-  });
 
   test(
     "TCPD-031 - Add to favorites while not logged in",
-    { tag: ["@regression"] },
+    { tag: ["@regression", "@flaky"] },
     async ({ productDetail, productDetailPage, page }) => {
       await expect(productDetailPage.addtofavBtn).toBeVisible();
       await productDetailPage.addToFavAction();
       await expect(productDetailPage.failAddfav).toBeVisible();
-    }
+    },
   );
 
   test(
     "TCPD-032 - Add Out of Stock to favorites (Guest)",
-    { tag: ["@regression"] },
+    { tag: ["@regression", "@flaky"] },
     async ({ outOfstock, productDetailPage, page }) => {
       await expect(productDetailPage.addtofavBtn).toBeVisible();
       await productDetailPage.addToFavAction();
       await expect(productDetailPage.failAddfav).toBeVisible();
-    }
+    },
   );
 
   test(
     "TCPD-034 - Verify Fail toast add to favorites auto-dismisses",
-    { tag: ["@regression"] },
+    { tag: ["@regression", "@flaky"] },
     async ({ outOfstock, productDetailPage, page }) => {
       await expect(productDetailPage.addtofavBtn).toBeVisible();
       await productDetailPage.addToFavAction();
       await expect(productDetailPage.failAddfav).toBeVisible();
-        await expect(productDetailPage.failAddfav).toBeHidden({timeout: 10000});
-    }
+      await expect(productDetailPage.failAddfav).toBeHidden({ timeout: 10000 });
+    },
   );
 
   test(
     "TCPD-035 - Verify related products display",
-    { tag: ["@regression"] },
+    { tag: ["@regression", "@flaky"] },
     async ({ productDetail, productDetailPage, page }) => {
       await expect(productDetailPage.addtofavBtn).toBeVisible();
       await expect(productDetailPage.relatedProduct).toBeVisible();
-    }
+    },
   );
-
   
 });
+

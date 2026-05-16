@@ -1,6 +1,7 @@
 import { test, expect } from "src/fixture/fixture";
 import { notification } from "@validation/notofication";
 import { EnvironmentManager } from "@helper/utils";
+import { ADDRGETNETWORKPARAMS } from "dns/promises";
 const {
   base_url
 } = EnvironmentManager.getCredentials();
@@ -21,7 +22,7 @@ test.describe("Product Overview - ", () => {
 
   test(
     "TCPO-002 - Verify product card display",
-    { tag: ["@smoke"] },
+    { tag: ["@smoke", "@regression"] },
     async ({ home, homePage, page }) => {
       await expect(homePage.firstProductCard).toBeVisible();
     },
@@ -29,7 +30,7 @@ test.describe("Product Overview - ", () => {
 
   test(
     "TCPO-003 - Verify product grid layout",
-    { tag: ["@smoke"] },
+    { tag: ["@smoke", "@regression"] },
     async ({ home, homePage, page }) => {
       await expect(homePage.gridDisplay).toBeVisible();
       await expect(homePage.gridDisplay).toHaveCSS("display", "grid");
@@ -38,7 +39,7 @@ test.describe("Product Overview - ", () => {
 
   test(
     "TCPO-004 - Navigate to product detail page",
-    { tag: ["@smoke"] },
+    { tag: ["@smoke", "@regression"] },
     async ({ home, homePage, page }) => {
       await homePage.tapFirstProduk();
       await expect(page).toHaveURL(/\/product\/[\w-]+/);
@@ -47,7 +48,7 @@ test.describe("Product Overview - ", () => {
 
   test(
     "TCPO-005 - Verify Homepage URL navigation",
-    { tag: ["@smoke"] },
+    { tag: ["@smoke", "@regression"] },
     async ({ home, homePage, page }) => {
       await expect(page).toHaveURL(`${base_url}`);
     },
@@ -55,7 +56,7 @@ test.describe("Product Overview - ", () => {
 
   test(
     "TCPO-006 - Navigate to Contact page",
-    { tag: ["@regression"] },
+    { tag: ["@regression",] },
     async ({ home, homePage, page }) => {
       await homePage.tapNavbar("CONTACT");
       await expect(page).toHaveURL(/\/contact/);
@@ -64,7 +65,7 @@ test.describe("Product Overview - ", () => {
 
   test(
     "TCPO-007 - Navigate to Home page from Home",
-    { tag: ["@smoke"] },
+    { tag: ["@smoke", "@regression"] },
     async ({ home, homePage, page }) => {
       await homePage.tapNavbar("HOME");
       await expect(homePage.firstProductCard).toBeVisible();
@@ -136,8 +137,10 @@ test.describe("Product Overview - ", () => {
     { tag: ["@regression"] },
     async ({ home, homePage, page }) => {
       await expect(homePage.firstProductCard).toBeVisible();
+      await expect(homePage.productTitle).toBeVisible();
       await homePage.pagination(5);
-      await expect(homePage.firstProductCard).toBeVisible();
+      await expect(homePage.firstProductCard).toBeVisible();  
+      await expect(homePage.productTitle).toBeVisible();
       await expect(homePage.next).toHaveClass(/disabled/);
     },
   );

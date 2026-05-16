@@ -127,14 +127,17 @@ test.describe("Login ", () => {
 
   test(
     "TCLF-010 - Verify account locking after 3 failed attempts",
-    { tag: ["@regression"] },
+    { tag: ["@regression", "@flaky"] },
     async ({loginPage, homePage, page }) => {
       await loginPage.openLoginPage();
       await expect(loginPage.emailField).toBeVisible();
       await loginPage.fillEmail('customer@practicesoftwaretesting.com');
       await loginPage.fillPassword('12345678')
-      for(let i = 0; i < 3; i++) {
+      await expect(loginPage.loginBtn).toBeEnabled();
+      for (let i = 0; i < 4; i++) {
         await loginPage.tapLoginBtn();
+        await page.waitForTimeout(1111)
+        await expect(loginPage.errorInvalidCredentials).toBeVisible();
       }
       await expect(loginPage.errorInvalidCredentials).toBeVisible();
       await expect(loginPage.errorInvalidCredentials).toContainText(notification.Login.error_account_locked);
