@@ -1,15 +1,15 @@
 import { test, expect } from "src/fixture/fixture";
 
-test.describe("Product Detail-Authenticated Tests", () => {
-  test.describe.configure({ mode: "serial" });
+test.describe.serial("Product Detail-Authenticated Tests", () => {
+ 
   test.use({ needsAuth: true });
 
   test(
     "TCPD-028 - Add product to favorites",
     { tag: ["@smoke", "@regression", "@flaky"] },
     async ({ page, productDetail, productDetailPage }) => {
-      await page.context().storageState({ path: `auth/state/storageState.json` });
-      await page.reload();
+      // await page.context().storageState({ path: `auth/state/storageState.json` });
+      // await page.reload();
       await expect(productDetailPage.addtofavBtn).toBeVisible();
       await expect(productDetailPage.priceProduct).toBeVisible();
       await expect(productDetailPage.addtofavBtn).toBeEnabled();
