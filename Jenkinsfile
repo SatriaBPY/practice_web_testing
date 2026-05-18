@@ -263,6 +263,8 @@ pipeline {
                 ⏱️ Duration: ${currentBuild.durationString.replace(' and counting', '')}
                 👤 By: ${currentBuild.getBuildCauses()[0].userName ?: 'Auto'}
                 """.stripIndent()
+
+                }
             }
         }
     }
