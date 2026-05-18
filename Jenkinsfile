@@ -239,7 +239,7 @@ pipeline {
                 def status = currentBuild.result ?: 'SUCCESS' 
                 def emoji = status == 'SUCCESS' ? '✅' : '❌'
 
-                currentBuild.displayName = "${emoji}  Build ${status}"
+                currentBuild.displayName = "${emoji}  Build ${status} (${currentBuild.durationString.replace(' and counting', '')})"
 
                 currentBuild.description = """
                 ${emoji}  Build ${status}
