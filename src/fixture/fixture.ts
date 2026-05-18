@@ -29,8 +29,8 @@ type MyFixture = {
   sharedPage: Page;
   home: HomePage;
   apiHelper: APIHelper;
-  productDetail: HomePage;
-  outOfstock: HomePage;
+  productDetail: ProductDetailPage;
+  outOfstock: ProductDetailPage;
   cartServices: CartServices;
   addProductTocart: CartServices;
   addProductTocart2: CartServices;
@@ -128,35 +128,29 @@ export const test = base.extend<MyOptions & MyFixture>({
     const helper = new APIHelper(page);
     await use(helper);
   },
-  productDetail: async ({ homePage, page, needsAuth }, use) => {
-    const storagePath = path.join(
-      process.cwd(),
-      "auth/state/storageState.json",
-    );
-
+  productDetail: async ({ homePage, page, needsAuth, productDetailPage }, use) => {
+    const storagePath = path.join(process.cwd(), "auth/state/storageState.json");
+  
     if (needsAuth) {
       const context = page.context();
       const state = await context.storageState();
       const hasAuthCookies = state.cookies?.length > 0;
-
+  
       if (!hasAuthCookies) {
         if (!fs.existsSync(storagePath)) {
           throw new Error(
-            `Storage state file not found at ${storagePath}. Please login first to generate it.`,
+            `Storage state file not found at ${storagePath}. Please login first to generate it.`
           );
         }
-        console.log(
-          "⚠️ No auth cookies detected, injecting fallback storageState...",
-        );
-
+        console.log("⚠️ No auth cookies detected, injecting fallback storageState...");
+  
         const storageState = JSON.parse(fs.readFileSync(storagePath, "utf-8"));
-
         await context.addCookies(storageState.cookies);
-
+        
         if (storageState.origins && storageState.origins.length > 0) {
           const baseUrl = EnvironmentManager.getCredentials();
           await page.goto(`${baseUrl.base_url}`);
-
+          
           for (const origin of storageState.origins) {
             await page.evaluate((originData) => {
               for (const item of originData.localStorage) {
@@ -165,69 +159,93 @@ export const test = base.extend<MyOptions & MyFixture>({
             }, origin);
           }
         }
-
+        
         await page.waitForTimeout(1000);
       }
     }
-
+  
     const baseUrl = EnvironmentManager.getCredentials();
     await page.goto(`${baseUrl.base_url}`);
-    await page.waitForLoadState("domcontentloaded");
-
+    await page.waitForLoadState('domcontentloaded');
+  
     const getId = await homePage.captureApiRespone();
-
+  
     if (!getId?.data?.[0]?.id) {
       throw new Error("Failed to capture product ID from API response");
     }
-
+  
     const productId = getId.data[0].id;
-    await homePage.productPrice.waitFor({ state: "visible", timeout: 10000 });
-
-    let retries = 3;
-    while (retries > 0) {
-      try {
-        await page.goto(`${baseUrl.base_url}product/${productId}`, {
-          waitUntil: "networkidle",
-          timeout: 15000,
-        });
-
-        await page.waitForLoadState("domcontentloaded");
-
-        if (needsAuth) {
-          const cookies = await page.context().cookies();
-          if (cookies.length === 0) {
-            throw new Error("Auth cookies lost after navigation");
-          }
+    await homePage.productPrice.waitFor({ state: 'visible', timeout: 10000 });
+    
+    await page.goto(`${baseUrl.base_url}product/${productId}`, { 
+      waitUntil: 'networkidle',
+      timeout: 15000 
+    });
+    
+    await page.waitForLoadState('domcontentloaded');
+  
+  
+    await use(productDetailPage);
+  },
+  
+  outOfstock: async ({ homePage, page, needsAuth, productDetailPage }, use) => {
+    const baseUrl = EnvironmentManager.getCredentials();
+    
+    if (needsAuth) {
+      const storagePath = path.join(process.cwd(), "auth/state/storageState.json");
+      const context = page.context();
+      const state = await context.storageState();
+      const hasAuthCookies = state.cookies?.length > 0;
+  
+      if (!hasAuthCookies) {
+        if (!fs.existsSync(storagePath)) {
+          throw new Error(
+            `Storage state file not found at ${storagePath}. Please login first.`
+          );
         }
-
-        break;
-      } catch (error) {
-        retries--;
-        if (retries === 0) throw error;
-        console.log(
-          `⚠️ Retry navigation to product detail (${retries} left)...`,
-        );
+        console.log("⚠️ Injecting auth state for outOfstock fixture...");
+        
+        const storageState = JSON.parse(fs.readFileSync(storagePath, "utf-8"));
+        await context.addCookies(storageState.cookies);
         await page.waitForTimeout(1000);
       }
     }
-
-    await use(homePage);
-  },
-  outOfstock: async ({ homePage, page }, use) => {
-    const baseUrl = EnvironmentManager.getCredentials();
+  
     await page.goto(`${baseUrl.base_url}`);
-
+    await page.waitForLoadState('domcontentloaded');
+  
     const getId = await homePage.captureApiRespone();
-
+  
     if (!getId?.data?.[3]?.id) {
       throw new Error("Out of stock product not found in API response");
     }
-
+  
     const productId = getId.data[3].id;
-    await page.goto(`${baseUrl.base_url}product/${productId}`);
-
-    await use(homePage);
+    
+    await page.goto(`${baseUrl.base_url}product/${productId}`, { 
+      waitUntil: 'networkidle',
+      timeout: 15000 
+    });
+    
+    await page.waitForLoadState('domcontentloaded');
+  
+    await use(productDetailPage);
   },
+  // outOfstock: async ({ homePage, page }, use) => {
+  //   const baseUrl = EnvironmentManager.getCredentials();
+  //   await page.goto(`${baseUrl.base_url}`);
+
+  //   const getId = await homePage.captureApiRespone();
+
+  //   if (!getId?.data?.[3]?.id) {
+  //     throw new Error("Out of stock product not found in API response");
+  //   }
+
+  //   const productId = getId.data[3].id;
+  //   await page.goto(`${baseUrl.base_url}product/${productId}`);
+
+  //   await use(homePage);
+  // },
 
   sharedPage: async ({ browser }, use) => {
     if (!context) {
