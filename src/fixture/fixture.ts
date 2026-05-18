@@ -150,6 +150,7 @@ export const test = base.extend<MyOptions & MyFixture>({
     
     const baseUrl = EnvironmentManager.getCredentials();
     await page.goto(`${baseUrl.base_url}`);
+    await page.waitForLoadState('domcontentloaded');
 
     const getId = await homePage.captureApiRespone();
 
