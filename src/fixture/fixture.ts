@@ -175,7 +175,7 @@ export const test = base.extend<MyOptions & MyFixture>({
     }
 
     const productId = getId.data[3].id;
-    await homePage.gotoUrl(`product/${productId}`);
+    await page.goto(`${baseUrl.base_url}product/${productId}`);
 
     await use(homePage);
   },

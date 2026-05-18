@@ -141,7 +141,7 @@ pipeline {
                             echo "✅ Test passed"
                             return
                         }
-                        sleep 5
+                        sleep 15
                     }
                     
                     env.TEST_FAILED = testFailed.toString()
