@@ -1,7 +1,8 @@
 import { test, expect } from "src/fixture/fixture";
 
-test.describe.serial("Product Detail-Authenticated Tests", () => {
- 
+
+test.describe("Product Detail-Authenticated Tests", () => {
+  test.describe.configure({ mode: "serial" });
   test.use({ needsAuth: true });
 
   test(
@@ -32,12 +33,6 @@ test.describe.serial("Product Detail-Authenticated Tests", () => {
       await expect(productDetailPage.duplicateAddfav).toBeVisible();
     },
   );
-}); 
-
-
-test.describe("Product Detail-Authenticated Tests", () => {
-  test.describe.configure({ mode: "serial" });
-  test.use({ needsAuth: true });
 
   test(
     "TCPD-030 - Add Out of Stock product to favorites",
