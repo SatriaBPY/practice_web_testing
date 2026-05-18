@@ -42,28 +42,31 @@ type MyFixture = {
 export const test = base.extend<MyOptions & MyFixture>({
   needsAuth: [false, { option: true }],
   page: async ({ browser, needsAuth }, use) => {
-      const storagePath = path.join(process.cwd(), "auth/state/storageState.json");
-  
-      let contexts;
-      if (needsAuth) {
-        if (!fs.existsSync(storagePath)) {
-          throw new Error(
-            `Storage state file not found at ${storagePath}. Please login first to generate it.`
-          );
-        }
-        console.log("✅ Auth requested, injecting storageState...");
-        contexts = await browser.newContext({
-          storageState: storagePath,
-          ignoreHTTPSErrors: true,
-        });
-      } else {
-        contexts = await browser.newContext({ ignoreHTTPSErrors: true });
+    const storagePath = path.join(
+      process.cwd(),
+      "auth/state/storageState.json",
+    );
+
+    let contexts;
+    if (needsAuth) {
+      if (!fs.existsSync(storagePath)) {
+        throw new Error(
+          `Storage state file not found at ${storagePath}. Please login first to generate it.`,
+        );
       }
-  
-      const page = await contexts.newPage();
-      await use(page);
-      await contexts.close();
-    },
+      console.log("✅ Auth requested, injecting storageState...");
+      contexts = await browser.newContext({
+        storageState: storagePath,
+        ignoreHTTPSErrors: true,
+      });
+    } else {
+      contexts = await browser.newContext({ ignoreHTTPSErrors: true });
+    }
+
+    const page = await contexts.newPage();
+    await use(page);
+    await contexts.close();
+  },
 
   gotoCheckout: async ({ cartPage, page }, use) => {
     // await cartPage.gotoUrl("checkout");
@@ -84,7 +87,6 @@ export const test = base.extend<MyOptions & MyFixture>({
     { page, cartServices, homePage, extraProduct },
     use,
   ) => {
-    
     const baseUrl = EnvironmentManager.getCredentials();
     await page.goto(`${baseUrl.base_url}`);
     const cartid = await cartServices.getCartId();
@@ -117,7 +119,7 @@ export const test = base.extend<MyOptions & MyFixture>({
 
     await use(cartServices);
   },
-  home: async ({ homePage , page}, use) => {
+  home: async ({ homePage, page }, use) => {
     const baseUrl = EnvironmentManager.getCredentials();
     await page.goto(`${baseUrl.base_url}`);
     await use(homePage);
@@ -127,45 +129,91 @@ export const test = base.extend<MyOptions & MyFixture>({
     await use(helper);
   },
   productDetail: async ({ homePage, page, needsAuth }, use) => {
-     const storagePath = path.join(process.cwd(), "auth/state/storageState.json");
+    const storagePath = path.join(
+      process.cwd(),
+      "auth/state/storageState.json",
+    );
 
-     if (needsAuth) {
-        const context = page.context();
-        const state = await context.storageState();
-    
-        const hasAuthCookies = state.cookies?.length > 0;
-    
-        if (!hasAuthCookies) {
-          if (!fs.existsSync(storagePath)) {
-            throw new Error(
-              `Storage state file not found at ${storagePath}. Please login first to generate it.`
-            );
-          }
-          console.log("⚠️ No auth cookies detected, injecting fallback storageState...");
-    
-          await context.addCookies(JSON.parse(fs.readFileSync(storagePath, "utf-8")).cookies);
-          await page.reload({ waitUntil: "networkidle" });
+    if (needsAuth) {
+      const context = page.context();
+      const state = await context.storageState();
+      const hasAuthCookies = state.cookies?.length > 0;
+
+      if (!hasAuthCookies) {
+        if (!fs.existsSync(storagePath)) {
+          throw new Error(
+            `Storage state file not found at ${storagePath}. Please login first to generate it.`,
+          );
         }
+        console.log(
+          "⚠️ No auth cookies detected, injecting fallback storageState...",
+        );
+
+        const storageState = JSON.parse(fs.readFileSync(storagePath, "utf-8"));
+
+        await context.addCookies(storageState.cookies);
+
+        if (storageState.origins && storageState.origins.length > 0) {
+          const baseUrl = EnvironmentManager.getCredentials();
+          await page.goto(`${baseUrl.base_url}`);
+
+          for (const origin of storageState.origins) {
+            await page.evaluate((originData) => {
+              for (const item of originData.localStorage) {
+                localStorage.setItem(item.name, item.value);
+              }
+            }, origin);
+          }
+        }
+
+        await page.waitForTimeout(1000);
       }
-    
+    }
+
     const baseUrl = EnvironmentManager.getCredentials();
     await page.goto(`${baseUrl.base_url}`);
-    await page.waitForLoadState('domcontentloaded');
+    await page.waitForLoadState("domcontentloaded");
 
     const getId = await homePage.captureApiRespone();
 
     if (!getId?.data?.[0]?.id) {
       throw new Error("Failed to capture product ID from API response");
     }
-    
 
     const productId = getId.data[0].id;
-    await homePage.productPrice.waitFor({state: 'visible'})
-    await page.goto(`${baseUrl.base_url}product/${productId}`);
+    await homePage.productPrice.waitFor({ state: "visible", timeout: 10000 });
+
+    let retries = 3;
+    while (retries > 0) {
+      try {
+        await page.goto(`${baseUrl.base_url}product/${productId}`, {
+          waitUntil: "networkidle",
+          timeout: 15000,
+        });
+
+        await page.waitForLoadState("domcontentloaded");
+
+        if (needsAuth) {
+          const cookies = await page.context().cookies();
+          if (cookies.length === 0) {
+            throw new Error("Auth cookies lost after navigation");
+          }
+        }
+
+        break;
+      } catch (error) {
+        retries--;
+        if (retries === 0) throw error;
+        console.log(
+          `⚠️ Retry navigation to product detail (${retries} left)...`,
+        );
+        await page.waitForTimeout(1000);
+      }
+    }
 
     await use(homePage);
   },
-  outOfstock: async ({ homePage ,page}, use) => {
+  outOfstock: async ({ homePage, page }, use) => {
     const baseUrl = EnvironmentManager.getCredentials();
     await page.goto(`${baseUrl.base_url}`);
 
