@@ -106,7 +106,7 @@ pipeline {
 
                         if (runId) break
                         echo "⏳ Waiting new run..."
-                        sleep 5
+                        sleep 15
                     }
 
                     if (!runId) {
