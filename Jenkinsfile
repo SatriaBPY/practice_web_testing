@@ -236,16 +236,33 @@ pipeline {
         always {
             script {
                 echo "Tests completed, cleaning up..."
+                def status = currentBuild.result ?: 'SUCCESS' 
+                def emoji = status == 'SUCCESS' ? '✅' : '❌'
+
+                currentBuild.description = """
+                ${emoji}  Build ${status}
+                🔧 Env: ${params.ENV}
+                🧪 Type: ${params.TEST_TYPE}
+                ⏱️ Duration: ${currentBuild.durationString.replace(' and counting', '')}
+                👤 By: ${currentBuild.getBuildCauses()[0].userName ?: 'Auto'}
+                """.stripIndent()
                 sleep time: 3, unit: 'SECONDS'
                 cleanWs()
             }
         }
         failure {
             script {
-                if (env.TEST_FAILED == 'true') {
-                    currentBuild.result = 'FAILURE'
-                    echo "Pipeline marked as FAILED because tests failed"
-                }
+            if (env.TEST_FAILED == 'true') {
+                currentBuild.result = 'FAILURE'
+                echo "Pipeline marked as FAILED because tests failed"
+                
+                currentBuild.description = """
+                ❌ Build FAILED (Tests Failed)
+                🔧 Env: ${params.ENV}
+                🧪 Type: ${params.TEST_TYPE}
+                ⏱️ Duration: ${currentBuild.durationString.replace(' and counting', '')}
+                👤 By: ${currentBuild.getBuildCauses()[0].userName ?: 'Auto'}
+                """.stripIndent()
             }
         }
     }
