@@ -31,6 +31,8 @@ type MyFixture = {
   apiHelper: APIHelper;
   productDetail: ProductDetailPage;
   outOfstock: ProductDetailPage;
+  productDetails: ProductDetailPage; //for auth
+  outOfstocks: ProductDetailPage; // for auth
   cartServices: CartServices;
   addProductTocart: CartServices;
   addProductTocart2: CartServices;
@@ -135,6 +137,7 @@ export const test = base.extend<MyOptions & MyFixture>({
       const context = page.context();
       const state = await context.storageState();
       const hasAuthCookies = state.cookies?.length > 0;
+     ;
   
       if (!hasAuthCookies) {
         if (!fs.existsSync(storagePath)) {
@@ -163,7 +166,9 @@ export const test = base.extend<MyOptions & MyFixture>({
         await page.waitForTimeout(1000);
       }
     }
-  
+
+    const homePages = new HomePage(page)
+
     const baseUrl = EnvironmentManager.getCredentials();
     await page.goto(`${baseUrl.base_url}`);
     await page.waitForLoadState('domcontentloaded');
@@ -175,17 +180,55 @@ export const test = base.extend<MyOptions & MyFixture>({
     }
   
     const productId = getId.data[0].id;
-    await homePage.productPrice.waitFor({ state: 'visible', timeout: 10000 });
+    await homePages.productPrice.waitFor({ state: 'visible', timeout: 10000 });
     
-    await page.goto(`${baseUrl.base_url}product/${productId}`, { 
+    await page.goto(`${baseUrl.base_url}product/${productId}`, {
       waitUntil: 'networkidle',
-      timeout: 15000 
+      timeout: 15000
     });
     
     await page.waitForLoadState('domcontentloaded');
   
   
     await use(productDetailPage);
+  },
+
+  productDetails: async ({ browser, needsAuth }, use) => {
+    const storagePath = path.join(
+      process.cwd(),
+      "auth/state/storageState.json",
+    );
+    const baseUrl = EnvironmentManager.getCredentials();
+
+    let contexts;
+    if (needsAuth) {
+      contexts = await browser.newContext({
+        storageState: storagePath,
+        ignoreHTTPSErrors: true,
+      });
+    } else {
+      contexts = await browser.newContext({
+        ignoreHTTPSErrors: true,
+      });
+    }
+
+    const page = await contexts.newPage();
+    const homePage = new HomePage(page);
+    await page.goto(`${baseUrl.base_url}`);
+    const getId = await homePage.captureApiRespone()
+    
+    if (!getId?.data?.[0]?.id) {
+      throw new Error("Out of stock product not found in API response");
+    }
+
+    const productId = getId.data[0].id;
+    await page.goto(`${baseUrl.base_url}product/${productId}`);
+      
+    const productDetailPage = new ProductDetailPage(page);
+    await use(productDetailPage);
+      
+    
+    await contexts.close();
   },
   
   outOfstock: async ({ homePage, page, needsAuth, productDetailPage }, use) => {
@@ -210,11 +253,13 @@ export const test = base.extend<MyOptions & MyFixture>({
         await page.waitForTimeout(1000);
       }
     }
+
+     const homePages = new HomePage(page)
   
     await page.goto(`${baseUrl.base_url}`);
     await page.waitForLoadState('domcontentloaded');
   
-    const getId = await homePage.captureApiRespone();
+    const getId = await homePages.captureApiRespone();
   
     if (!getId?.data?.[3]?.id) {
       throw new Error("Out of stock product not found in API response");
@@ -231,21 +276,44 @@ export const test = base.extend<MyOptions & MyFixture>({
   
     await use(productDetailPage);
   },
-  // outOfstock: async ({ homePage, page }, use) => {
-  //   const baseUrl = EnvironmentManager.getCredentials();
-  //   await page.goto(`${baseUrl.base_url}`);
+  outOfstocks: async ({ browser, needsAuth }, use) => {
+    const storagePath = path.join(
+      process.cwd(),
+      "auth/state/storageState.json",
+    );
+    const baseUrl = EnvironmentManager.getCredentials();
 
-  //   const getId = await homePage.captureApiRespone();
+    let contexts;
+    if (needsAuth) {
+      contexts = await browser.newContext({
+        storageState: storagePath,
+        ignoreHTTPSErrors: true,
+      });
+    } else {
+      contexts = await browser.newContext({
+        ignoreHTTPSErrors: true,
+      });
+    }
 
-  //   if (!getId?.data?.[3]?.id) {
-  //     throw new Error("Out of stock product not found in API response");
-  //   }
+    const page = await contexts.newPage();
+    const homePage = new HomePage(page);
+    await page.goto(`${baseUrl.base_url}`);
+    const getId = await homePage.captureApiRespone()
+    
+    if (!getId?.data?.[3]?.id) {
+      throw new Error("Out of stock product not found in API response");
+    }
 
-  //   const productId = getId.data[3].id;
-  //   await page.goto(`${baseUrl.base_url}product/${productId}`);
-
-  //   await use(homePage);
-  // },
+    const productId = getId.data[3].id;
+    await page.goto(`${baseUrl.base_url}product/${productId}`);
+      
+    const productDetailPage = new ProductDetailPage(page);
+    await use(productDetailPage);
+      
+    
+    await contexts.close();
+  },
+  // 
 
   sharedPage: async ({ browser }, use) => {
     if (!context) {

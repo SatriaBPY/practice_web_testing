@@ -8,15 +8,14 @@ test.describe("Product Detail-Authenticated Tests", () => {
   test(
     "TCPD-028 - Add product to favorites",
     { tag: ["@smoke", "@regression", "@flaky"] },
-    async ({ page, productDetail, productDetailPage }) => {
-      // await page.context().storageState({ path: `auth/state/storageState.json` });
-      // await page.reload();
-      await expect(productDetailPage.addtofavBtn).toBeVisible();
-      await expect(productDetailPage.priceProduct).toBeVisible();
-      await expect(productDetailPage.addtofavBtn).toBeEnabled();
-      await productDetailPage.addToFavAction();
+    async ({ page, productDetails }) => {
+      
+      await expect(productDetails.addtofavBtn).toBeVisible();
+      await expect(productDetails.priceProduct).toBeVisible();
+      await expect(productDetails.addtofavBtn).toBeEnabled();
+      await productDetails.addToFavAction();
       await expect(async () => {
-        await expect(productDetailPage.successAddfav).toBeVisible({
+        await expect(productDetails.successAddfav).toBeVisible({
           timeout: 2000,
         });
       }).toPass({ timeout: 10000 });
@@ -27,31 +26,31 @@ test.describe("Product Detail-Authenticated Tests", () => {
   test(
     "TCPD-029 - Add duplicate product to favorites",
     { tag: ["@regression", "@flaky"] },
-    async ({ productDetail, productDetailPage, page }) => {
-      await expect(productDetailPage.addtofavBtn).toBeVisible();
-      await productDetailPage.addToFavAction();
-      await expect(productDetailPage.duplicateAddfav).toBeVisible();
+    async ({ productDetails, page }) => {
+      await expect(productDetails.addtofavBtn).toBeVisible();
+      await productDetails.addToFavAction();
+      await expect(productDetails.duplicateAddfav).toBeVisible();
     },
   );
 
   test(
     "TCPD-030 - Add Out of Stock product to favorites",
     { tag: ["@regression", "@flaky"] },
-    async ({ outOfstock, productDetailPage, page }) => {
-      await expect(productDetailPage.addtofavBtn).toBeVisible();
-      await productDetailPage.addToFavAction();
-      await expect(productDetailPage.successAddfav).toBeVisible();
+    async ({ outOfstocks, productDetail, page }) => {
+      await expect(outOfstocks.addtofavBtn).toBeVisible();
+      await outOfstocks.addToFavAction();
+      await expect(outOfstocks.successAddfav).toBeVisible();
     },
   );
 
   test(
     "TCPD-033 - Verify Success toast add to favorites auto-dismisses",
     { tag: ["@regression", "@flaky"] },
-    async ({ outOfstock, productDetailPage, page }) => {
-      await expect(productDetailPage.addtofavBtn).toBeVisible();
-      await productDetailPage.addToFavAction();
-      await expect(productDetailPage.duplicateAddfav).toBeVisible();
-      await expect(productDetailPage.duplicateAddfav).toBeHidden({
+    async ({ outOfstocks, productDetail, page }) => {
+      await expect(outOfstocks.addtofavBtn).toBeVisible();
+      await outOfstocks.addToFavAction();
+      await expect(outOfstocks.duplicateAddfav).toBeVisible();
+      await expect(outOfstocks.duplicateAddfav).toBeHidden({
         timeout: 10000,
       });
     },
