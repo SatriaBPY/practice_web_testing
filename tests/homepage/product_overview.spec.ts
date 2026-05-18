@@ -1171,7 +1171,7 @@ test.describe("Product Overview - ", () => {
 
   test(
     "TCPO-068 - Sorting applied (e.g., CO2 rating (E–A)) on max page",
-    { tag: [ "@bug"] },
+    { tag: ["@regression", "@bug"] },
     async ({ home, homePage, page }) => {
 
       await homePage.pagination(5)
