@@ -239,6 +239,8 @@ pipeline {
                 def status = currentBuild.result ?: 'SUCCESS' 
                 def emoji = status == 'SUCCESS' ? '✅' : '❌'
 
+                currentBuild.displayName = "${emoji}  Build ${status}"
+
                 currentBuild.description = """
                 ${emoji}  Build ${status}
                 🔧 Env: ${params.ENV}
