@@ -22,6 +22,8 @@ export default class ProductDetailPage extends BasePage {
   private imageProduct(name: string) {
     return this.page.getByRole("img", { name: `${name}`, exact: true });
   }
+
+  
   //specification komponnen
   readonly specificationTitle = this.page.locator('[data-test="specs-title"]');
   readonly specificationTable = this.page.locator(
@@ -107,5 +109,8 @@ export default class ProductDetailPage extends BasePage {
   async gotoCartPage() {
     await this.navBar.cartIcon.click();
   }
-  
+
+  async accountNameVerification() {
+    await expect(this.navBar.accountName).toBeVisible();
+  }
 }

@@ -161,7 +161,7 @@ export default class CartPage extends BasePage {
   readonly confirmBtn = this.page.locator('[data-test="finish"]');
   readonly errorMsg = this.page.locator('[data-test="payment-error-message"]');
   get invoiceNumber() {
-    return this.page.locator('[id="order-confirmation"]')
+    return this.page.locator('[id="order-confirmation"]');
   }
   get errorMsgBankNameSpecialChar() {
     return this.page
@@ -389,13 +389,21 @@ export default class CartPage extends BasePage {
   async invoiceNumberText() {
     const text = await this.invoiceNumber.textContent();
     const data = text?.split("is ")[1].replace(".", "");
-    console.log(`Order Success invoice number is: ${data}`)
+    console.log(`Order Success invoice number is: ${data}`);
   }
 
   async cartIsEmpty() {
     await expect(this.navBar.cartIcon).toBeHidden();
   }
 
- 
-  
+  async streetFieldClear() {
+    await this.streetField.clear();
+    await this.page.waitForTimeout(500);
+    const value = await this.streetField.textContent();
+    if (value !== null) {
+      console.log("street field still have value, clearing....");
+      await this.page.waitForTimeout(500);
+      await this.streetField.clear();
+    }
+  }
 }

@@ -1,61 +1,61 @@
 import { test, expect } from "src/fixture/fixture";
 
+// test.describe("Product Detail-Authenticated Tests", () => {
+//   test.describe.configure({ mode: "serial" });
+//   test.use({ needsAuth: true });
 
-test.describe("Product Detail-Authenticated Tests", () => {
-  test.describe.configure({ mode: "serial" });
-  test.use({ needsAuth: true });
-
-  test(
-    "TCPD-028 - Add product to favorites",
-    { tag: ["@smoke", "@regression", "@flaky"] },
-    async ({ page, productDetails }) => {
-      
-      await expect(productDetails.addtofavBtn).toBeVisible();
-      await expect(productDetails.priceProduct).toBeVisible();
-      await expect(productDetails.addtofavBtn).toBeEnabled();
-      await productDetails.addToFavAction();
-      await expect(async () => {
-        await expect(productDetails.successAddfav).toBeVisible({
-          timeout: 2000,
-        });
-      }).toPass({ timeout: 10000 });
-    },
-  );
+//   test(
+//     "TCPD-028 - Add product to favorites",
+//     { tag: ["@smoke", "@regression", "@flaky", "@test"] },
+//     async ({ page, productDetail, productDetailPage }) => {
+//       await expect(productDetailPage.addtofavBtn).toBeVisible();
+//       await expect(productDetailPage.priceProduct).toBeVisible();
+//       await expect(productDetailPage.addtofavBtn).toBeEnabled();
+//       await productDetailPage.addToFavAction();
+//       // await expect(async () => {
+//       //   await expect(productDetailPage.successAddfav).toBeVisible({
+//       //     timeout: 2000,
+//       //   });
+//       // }).toPass({ timeout: 10000 });
+//       await expect(productDetailPage.successAddfav).toBeVisible();
+//     },
+//   );
 
 
-  test(
-    "TCPD-029 - Add duplicate product to favorites",
-    { tag: ["@regression", "@flaky"] },
-    async ({ productDetails, page }) => {
-      await expect(productDetails.addtofavBtn).toBeVisible();
-      await productDetails.addToFavAction();
-      await expect(productDetails.duplicateAddfav).toBeVisible();
-    },
-  );
+//   test(
+//     "TCPD-029 - Add duplicate product to favorites",
+//     { tag: ["@regression", "@flaky", "@test"] },
+//     async ({ productDetail, productDetailPage, page }) => {
+//       await expect(productDetailPage.addtofavBtn).toBeVisible();
+//       await productDetailPage.addToFavAction();
+//       await expect(productDetailPage.duplicateAddfav).toBeVisible();
+//     },
+//   );
 
-  test(
-    "TCPD-030 - Add Out of Stock product to favorites",
-    { tag: ["@regression", "@flaky"] },
-    async ({ outOfstocks, productDetail, page }) => {
-      await expect(outOfstocks.addtofavBtn).toBeVisible();
-      await outOfstocks.addToFavAction();
-      await expect(outOfstocks.successAddfav).toBeVisible();
-    },
-  );
+//   test(
+//     "TCPD-030 - Add Out of Stock product to favorites",
+//     { tag: ["@regression", "@flaky", "@test"] },
+//     async ({ outOfstock, productDetailPage, page }) => {
+//       await expect(productDetailPage.addtofavBtn).toBeVisible();
+//       await productDetailPage.addToFavAction();
+//       await expect(productDetailPage.successAddfav).toBeVisible();
+//     },
+//   );
 
-  test(
-    "TCPD-033 - Verify Success toast add to favorites auto-dismisses",
-    { tag: ["@regression", "@flaky"] },
-    async ({ outOfstocks, productDetail, page }) => {
-      await expect(outOfstocks.addtofavBtn).toBeVisible();
-      await outOfstocks.addToFavAction();
-      await expect(outOfstocks.duplicateAddfav).toBeVisible();
-      await expect(outOfstocks.duplicateAddfav).toBeHidden({
-        timeout: 10000,
-      });
-    },
-  );
-}); 
+//   test(
+//     "TCPD-033 - Verify Success toast add to favorites auto-dismisses",
+//     { tag: ["@regression", "@flaky", "@test"] },
+//     async ({ outOfstock, productDetailPage, page }) => {
+//       await expect(productDetailPage.addtofavBtn).toBeVisible();
+//       await productDetailPage.addToFavAction();
+//       await expect(productDetailPage.duplicateAddfav).toBeVisible();
+//       await expect(productDetailPage.duplicateAddfav).toBeHidden({
+//         timeout: 10000,
+//       });
+//     },
+//   );
+// }); 
+
 
 test.describe("Product Detail ", () => {
   test(

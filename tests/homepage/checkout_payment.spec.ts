@@ -352,7 +352,8 @@ test.describe("Checkout - Payement ", () => {
   );
 
   test.describe.serial("Authenticated Tests", () => {
-    test.use({ needsAuth: true });
+    //test.use({ needsAuth: true });
+    test.use({ storageState: "auth/state/storageState.json" });
   
     test(
       "TCCP-020 - Verify cart is empty after successful payment",

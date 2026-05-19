@@ -26,4 +26,8 @@ export class NavBar {
   get cartIcon() {
     return this.page.locator('[data-test="nav-cart"]')
   }
+
+  get accountName() {
+    return this.page.locator('[data-test="nav-menu"]');
+  }
 }

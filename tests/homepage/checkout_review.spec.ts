@@ -343,7 +343,8 @@ test.describe("Checkout Review ", () => {
   });
 
   test.describe.serial("Authenticated Tests", () => {
-    test.use({ needsAuth: true });
+    // test.use({ needsAuth: true });
+    test.use({ storageState: "auth/state/storageState.json" });
     test(
       "TCCO-022 - Proceed after login during checkout",
       { tag: [ "@regression", "@flaky"] },

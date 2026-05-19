@@ -10,64 +10,198 @@ import path from "path";
 import fs from "fs";
 import { EnvironmentManager } from "@helper/utils";
 
-let context: BrowserContext;
-let page: Page;
+let contexts: BrowserContext;
+let pages: Page;
 
 type MyOptions = {
-  needsAuth: boolean;
+  // /needsAuth: boolean;
   extraProduct: boolean;
 };
 
 type MyFixture = {
   page: Page;
+  home: HomePage;
   homePage: HomePage;
   cartPage: CartPage;
   productDetailPage: ProductDetailPage;
-  homePageShared: HomePage;
-  cartPageShared: CartPage;
-  productDetailPageShared: ProductDetailPage;
-  sharedPage: Page;
-  home: HomePage;
   apiHelper: APIHelper;
   productDetail: ProductDetailPage;
   outOfstock: ProductDetailPage;
-  productDetails: ProductDetailPage; //for auth
-  outOfstocks: ProductDetailPage; // for auth
   cartServices: CartServices;
   addProductTocart: CartServices;
   addProductTocart2: CartServices;
   gotoCheckout: CartPage;
   loginPage: LoginPage;
-  loginSharedPage: LoginPage;
 };
 
-export const test = base.extend<MyOptions & MyFixture>({
-  needsAuth: [false, { option: true }],
-  page: async ({ browser, needsAuth }, use) => {
-    const storagePath = path.join(
-      process.cwd(),
-      "auth/state/storageState.json",
-    );
+type authFixture = {
+  authPage: Page
+  homeAuth: HomePage;
+  homePageAuth: HomePage;
+  cartPageAuth: CartPage;
+  productDetailPageAuth: ProductDetailPage;
+  loginPageAuth: LoginPage;
+  apiHelperAuth: APIHelper;
+  productDetailAuth: ProductDetailPage;
+  outOfstockAuth: ProductDetailPage;
+  cartServicesAuth: CartServices;
+  addProductTocartAuth: CartServices;
+  gotoCheckoutAuth: CartPage;
+}
 
-    let contexts;
-    if (needsAuth) {
-      if (!fs.existsSync(storagePath)) {
-        throw new Error(
-          `Storage state file not found at ${storagePath}. Please login first to generate it.`,
-        );
-      }
-      console.log("✅ Auth requested, injecting storageState...");
-      contexts = await browser.newContext({
-        storageState: storagePath,
-        ignoreHTTPSErrors: true,
-      });
-    } else {
-      contexts = await browser.newContext({ ignoreHTTPSErrors: true });
-    }
+type sharedFixture = {
+  sharedPage: Page;
+  homePageShared: HomePage;
+  cartPageShared: CartPage;
+  productDetailPageShared: ProductDetailPage;
+  loginSharedPage: LoginPage;
+}
+
+export const test = base.extend<MyOptions & MyFixture & sharedFixture & authFixture>({
+  // needsAuth: [false, { option: true }],
+  page: async ({ browser }, use) => {
+    // const storagePath = path.join(
+    //   process.cwd(),
+    //   "auth/state/storageState.json",
+    // );
+
+    // let contexts;
+    // if (needsAuth) {
+    //   if (!fs.existsSync(storagePath)) {
+    //     throw new Error(
+    //       `Storage state file not found at ${storagePath}. Please login first to generate it.`,
+    //     );
+    //   }
+    //   console.log("✅ Auth requested, injecting storageState...");
+    //   contexts = await browser.newContext({
+    //     storageState: storagePath,
+    //     ignoreHTTPSErrors: true,
+    //   });
+    // } else {
+      const contexts = await browser.newContext({ ignoreHTTPSErrors: true });
+      //}
 
     const page = await contexts.newPage();
     await use(page);
     await contexts.close();
+  },
+  extraProduct: [false, { option: true }],
+  
+  authPage: async ({ browser }, use) => {
+    const storagePath = path.join(
+        process.cwd(),
+        "auth/state/storageState.json",
+      );
+    const contexts = await browser.newContext({ ignoreHTTPSErrors: true, storageState: storagePath });
+    const page = await contexts.newPage();
+    await use(page);
+    await contexts.close();
+  },
+
+  cartServicesAuth: async ({ request }, use) => {
+    const services = new CartServices(request);
+    await use(services);
+  },
+
+  gotoCheckoutAuth: async ({ cartPageAuth, authPage }, use) => {
+    // await cartPage.gotoUrl("checkout");
+    const baseUrl = EnvironmentManager.getCredentials();
+    await authPage.goto(`${baseUrl.base_url}/checkout`);
+    await cartPageAuth.stepIndecator.waitFor({ state: "visible" });
+    await use(cartPageAuth);
+  },
+
+  addProductTocartAuth: async (
+    { authPage, cartServicesAuth, homePageAuth, extraProduct },
+    use,
+  ) => {
+    const baseUrl = EnvironmentManager.getCredentials();
+    await authPage.goto(`${baseUrl.base_url}`);
+    const cartid = await cartServicesAuth.getCartId();
+
+    const getId = await homePageAuth.captureApiRespone();
+
+    if (!getId?.data?.[1]?.id) {
+      throw new Error("Failed to get product data from API");
+    }
+
+    const firstProductId = getId.data[1].id;
+
+    await homePageAuth.injectSessinStorage(cartid);
+
+    await cartServicesAuth.addProductToCartAsGuest(firstProductId, cartid);
+    console.log("Added first product:", firstProductId);
+
+    if (extraProduct) {
+      if (!getId.data?.[2]?.id) {
+        throw new Error("Extra product not found in API response");
+      }
+
+      const secondProductId = getId.data[2].id;
+      await cartServicesAuth.addProductToCartAsGuest(secondProductId, cartid);
+      console.log("Added extra product:", secondProductId);
+    }
+
+    console.log("Cart ID:", cartid);
+    await authPage.reload({ waitUntil: "networkidle" });
+
+    await use(cartServicesAuth);
+  },
+  homeAuth: async ({ homePageAuth, authPage }, use) => {
+    const baseUrl = EnvironmentManager.getCredentials();
+    await authPage.goto(`${baseUrl.base_url}`);
+    await use(homePageAuth);
+  },
+  apiHelperAuth: async ({ authPage }, use) => {
+    const helper = new APIHelper(authPage);
+    await use(helper);
+  },
+  productDetailAuth: async ({ homePageAuth, authPage, productDetailPageAuth }, use) => {
+
+    const homePages = new HomePage(authPage)
+
+    const baseUrl = EnvironmentManager.getCredentials();
+    await authPage.goto(`${baseUrl.base_url}`);
+    await authPage.waitForLoadState('domcontentloaded');
+  
+    const getId = await homePages.captureApiRespone();
+  
+    if (!getId?.data?.[0]?.id) {
+      throw new Error("Failed to capture product ID from API response");
+    }
+  
+    const productId = getId.data[0].id;
+    await homePages.productPrice.waitFor({ state: 'visible', timeout: 10000 });
+    
+    await authPage.goto(`${baseUrl.base_url}product/${productId}`);
+    
+    await authPage.waitForLoadState('domcontentloaded');
+  
+  
+    await use(productDetailPageAuth);
+  },
+  outOfstockAuth: async ({ homePageAuth, authPage, productDetailPageAuth }, use) => {
+    const baseUrl = EnvironmentManager.getCredentials();
+    
+
+     const homePages = new HomePage(authPage)
+  
+    await authPage.goto(`${baseUrl.base_url}`);
+    await authPage.waitForLoadState('domcontentloaded');
+  
+    const getId = await homePages.captureApiRespone();
+  
+    if (!getId?.data?.[3]?.id) {
+      throw new Error("Out of stock product not found in API response");
+    }
+  
+    const productId = getId.data[3].id;
+    
+    await authPage.goto(`${baseUrl.base_url}product/${productId}`);
+    
+    await authPage.waitForLoadState('domcontentloaded');
+  
+    await use(productDetailPageAuth);
   },
 
   gotoCheckout: async ({ cartPage, page }, use) => {
@@ -83,7 +217,7 @@ export const test = base.extend<MyOptions & MyFixture>({
     await use(services);
   },
 
-  extraProduct: [false, { option: true }],
+  
 
   addProductTocart: async (
     { page, cartServices, homePage, extraProduct },
@@ -130,42 +264,8 @@ export const test = base.extend<MyOptions & MyFixture>({
     const helper = new APIHelper(page);
     await use(helper);
   },
-  productDetail: async ({ homePage, page, needsAuth, productDetailPage }, use) => {
+  productDetail: async ({ homePage, page, productDetailPage }, use) => {
     const storagePath = path.join(process.cwd(), "auth/state/storageState.json");
-  
-    if (needsAuth) {
-      const context = page.context();
-      const state = await context.storageState();
-      const hasAuthCookies = state.cookies?.length > 0;
-     ;
-  
-      if (!hasAuthCookies) {
-        if (!fs.existsSync(storagePath)) {
-          throw new Error(
-            `Storage state file not found at ${storagePath}. Please login first to generate it.`
-          );
-        }
-        console.log("⚠️ No auth cookies detected, injecting fallback storageState...");
-  
-        const storageState = JSON.parse(fs.readFileSync(storagePath, "utf-8"));
-        await context.addCookies(storageState.cookies);
-        
-        if (storageState.origins && storageState.origins.length > 0) {
-          const baseUrl = EnvironmentManager.getCredentials();
-          await page.goto(`${baseUrl.base_url}`);
-          
-          for (const origin of storageState.origins) {
-            await page.evaluate((originData) => {
-              for (const item of originData.localStorage) {
-                localStorage.setItem(item.name, item.value);
-              }
-            }, origin);
-          }
-        }
-        
-        await page.waitForTimeout(1000);
-      }
-    }
 
     const homePages = new HomePage(page)
 
@@ -182,10 +282,7 @@ export const test = base.extend<MyOptions & MyFixture>({
     const productId = getId.data[0].id;
     await homePages.productPrice.waitFor({ state: 'visible', timeout: 10000 });
     
-    await page.goto(`${baseUrl.base_url}product/${productId}`, {
-      waitUntil: 'networkidle',
-      timeout: 15000
-    });
+    await page.goto(`${baseUrl.base_url}product/${productId}`);
     
     await page.waitForLoadState('domcontentloaded');
   
@@ -193,66 +290,9 @@ export const test = base.extend<MyOptions & MyFixture>({
     await use(productDetailPage);
   },
 
-  productDetails: async ({ browser, needsAuth }, use) => {
-    const storagePath = path.join(
-      process.cwd(),
-      "auth/state/storageState.json",
-    );
-    const baseUrl = EnvironmentManager.getCredentials();
-
-    let contexts;
-    if (needsAuth) {
-      contexts = await browser.newContext({
-        storageState: storagePath,
-        ignoreHTTPSErrors: true,
-      });
-    } else {
-      contexts = await browser.newContext({
-        ignoreHTTPSErrors: true,
-      });
-    }
-
-    const page = await contexts.newPage();
-    const homePage = new HomePage(page);
-    await page.goto(`${baseUrl.base_url}`);
-    const getId = await homePage.captureApiRespone()
-    
-    if (!getId?.data?.[0]?.id) {
-      throw new Error("Out of stock product not found in API response");
-    }
-
-    const productId = getId.data[0].id;
-    await page.goto(`${baseUrl.base_url}product/${productId}`);
-      
-    const productDetailPage = new ProductDetailPage(page);
-    await use(productDetailPage);
-      
-    
-    await contexts.close();
-  },
-  
-  outOfstock: async ({ homePage, page, needsAuth, productDetailPage }, use) => {
+  outOfstock: async ({ homePage, page, productDetailPage }, use) => {
     const baseUrl = EnvironmentManager.getCredentials();
     
-    if (needsAuth) {
-      const storagePath = path.join(process.cwd(), "auth/state/storageState.json");
-      const context = page.context();
-      const state = await context.storageState();
-      const hasAuthCookies = state.cookies?.length > 0;
-  
-      if (!hasAuthCookies) {
-        if (!fs.existsSync(storagePath)) {
-          throw new Error(
-            `Storage state file not found at ${storagePath}. Please login first.`
-          );
-        }
-        console.log("⚠️ Injecting auth state for outOfstock fixture...");
-        
-        const storageState = JSON.parse(fs.readFileSync(storagePath, "utf-8"));
-        await context.addCookies(storageState.cookies);
-        await page.waitForTimeout(1000);
-      }
-    }
 
      const homePages = new HomePage(page)
   
@@ -267,61 +307,24 @@ export const test = base.extend<MyOptions & MyFixture>({
   
     const productId = getId.data[3].id;
     
-    await page.goto(`${baseUrl.base_url}product/${productId}`, { 
-      waitUntil: 'networkidle',
-      timeout: 15000 
-    });
+    await page.goto(`${baseUrl.base_url}product/${productId}`);
     
     await page.waitForLoadState('domcontentloaded');
   
     await use(productDetailPage);
   },
-  outOfstocks: async ({ browser, needsAuth }, use) => {
-    const storagePath = path.join(
-      process.cwd(),
-      "auth/state/storageState.json",
-    );
-    const baseUrl = EnvironmentManager.getCredentials();
-
-    let contexts;
-    if (needsAuth) {
-      contexts = await browser.newContext({
-        storageState: storagePath,
-        ignoreHTTPSErrors: true,
-      });
-    } else {
-      contexts = await browser.newContext({
-        ignoreHTTPSErrors: true,
-      });
-    }
-
-    const page = await contexts.newPage();
-    const homePage = new HomePage(page);
-    await page.goto(`${baseUrl.base_url}`);
-    const getId = await homePage.captureApiRespone()
-    
-    if (!getId?.data?.[3]?.id) {
-      throw new Error("Out of stock product not found in API response");
-    }
-
-    const productId = getId.data[3].id;
-    await page.goto(`${baseUrl.base_url}product/${productId}`);
-      
-    const productDetailPage = new ProductDetailPage(page);
-    await use(productDetailPage);
-      
-    
-    await contexts.close();
-  },
-  // 
-
+  
   sharedPage: async ({ browser }, use) => {
-    if (!context) {
-      context = await browser.newContext({ ignoreHTTPSErrors: true });
-      page = await context.newPage();
+    if (!contexts) {
+      contexts = await browser.newContext({ ignoreHTTPSErrors: true });
+      pages = await contexts.newPage();
     }
-    await use(page);
+    await use(pages);
   },
+  homePageAuth: async ({ authPage }, use) => use(new HomePage(authPage)),
+  cartPageAuth: async ({ authPage }, use) => use(new CartPage(authPage)),
+  productDetailPageAuth: async ({ authPage }, use) => use(new ProductDetailPage(authPage)),
+  loginPageAuth: async ({ authPage }, use) => use(new LoginPage(authPage)),
   homePage: async ({ page }, use) => use(new HomePage(page)),
   cartPage: async ({ page }, use) => use(new CartPage(page)),
   loginPage: async ({ page }, use) => use(new LoginPage(page)),
@@ -337,5 +340,5 @@ export const test = base.extend<MyOptions & MyFixture>({
 export { expect };
 
 test.afterAll(async () => {
-  await context?.close();
+  await contexts?.close();
 });

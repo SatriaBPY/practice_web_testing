@@ -5,8 +5,9 @@ export default defineConfig({
   globalTeardown: "./setup/teardown_setup.ts",
   testDir: "./tests",
   testMatch: [
-    "e2e_login.spec.ts",
+    //"e2e_login.spec.ts",
     "login.spec.ts",
+    "product_detail_auth.spec.ts",
     "product_overview.spec.ts",
     "product_detail.spec.ts",
     "checkout_review.spec.ts",

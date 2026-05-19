@@ -371,7 +371,7 @@ test.describe("Checkout Billing Address", () => {
       await cartPage.houseNumberFill(billing_address.house_number);
       await expect(cartPage.postalcodeLookup).toBeVisible().catch(() => false);
       await page.waitForTimeout(1111)
-      await cartPage.streetField.clear();
+      await cartPage.streetFieldClear();
       await cartPage.cityField.fill(billing_address.city);
       await cartPage.stateFill(billing_address.state);
       await expect(cartPage.submitBtnCheckout).toBeDisabled();
